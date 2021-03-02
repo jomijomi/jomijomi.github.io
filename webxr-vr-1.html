@@ -21,7 +21,7 @@ https://immersive-web.github.io/webxr-samples/
         <details open>
             <summary>Testing WebXR (VR)</summary>
             <p>
-                V78: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
+                V79: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
                 The scene is not rendered to the actual webpage, only VR.
                 Quest 1: Small will work well. Medium will work well at lower FPS.
                 Quest 2: Small, Medium will work well. Large is just at the threshold.
@@ -44,74 +44,93 @@ https://immersive-web.github.io/webxr-samples/
             <br />
             <input type="checkbox" id="lower_fps">Force lower refresh rate</input>
             <br />
+            <!--
+    <br />
+    <input type="checkbox" id="fixed_foveation">Lower resolution at edges (Note: This setting *might* not have any effect...)</input>
+    <br />
+    -->
             <br />
-            <input type="checkbox" id="fixed_foveation">Lower resolution at edges (Note: This setting *might* not have any effect...)</input>
+            <label>Fixed foveation (FFR) settings: </label>
+            <select id="fixed_foveation">
+                <option value='no-fixed-foveation'>
+                    None
+                </option>
+                <option value='low-fixed-foveation-level'>
+                    Low
+                </option>
+                <option value='medium-fixed-foveation-level'>
+                    Medium
+                </option>
+                <option value='high-fixed-foveation-level'>
+                    High
+                </option>
+            </select>
             <br />
         </details>
-    </header>
-    <main style='text-align: center;'>
-        <p>Click 'Enter XR' to see content</p>
-    </main>
-    <script type="module">
-        import { WebXRButton } from './js/util/webxr-button.js';
-        //import {Scene} from './js/render/scenes/scene.js';
-        //import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
-        import { createWebGLContext } from './js/render/core/renderer.js';
-        //import {Gltf2Node} from './js/render/nodes/gltf2.js';
-        //import {SkyboxNode} from './js/render/nodes/skybox.js';
-        import { QueryArgs } from './js/util/query-args.js';
-        
-        // XR globals.
-        let xrButton = null;
-       
-        
-        var viewerXR = null;
+        </header>
+        <main style='text-align: center;'>
+            <p>Click 'Enter XR' to see content</p>
+        </main>
+        <script type="module">
+            import { WebXRButton } from './js/util/webxr-button.js';
+            //import {Scene} from './js/render/scenes/scene.js';
+            //import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
+            import { createWebGLContext } from './js/render/core/renderer.js';
+            //import {Gltf2Node} from './js/render/nodes/gltf2.js';
+            //import {SkyboxNode} from './js/render/nodes/skybox.js';
+            import { QueryArgs } from './js/util/query-args.js';
 
-        let low_fps = document.getElementById('lower_fps');
-        let use_FFR = document.getElementById('fixed_foveation');
-        
-        // Checks to see if WebXR is available and, if so, queries a list of
-        // XRDevices that are connected to the system.
-        function initXR() {
+            // XR globals.
+            let xrButton = null;
 
-            viewerXR = new ViewerXR(navigator.xr); //Create the xBIM XR viewer object
 
-            // Adds a helper button to the page that indicates if any XRDevices are
-            // available and let's the user pick between them if there's multiple.
-            xrButton = new WebXRButton({
-                onRequestSession: viewerXR.onRequestSession.bind(viewerXR),
-                onEndSession: onEndSession
-            });
+            var viewerXR = null;
 
-            //viewerXR.xrButton(xrButton);
-            //viewerXR.modelToLoad('data/Small.wexbim');
-            viewerXR.xrButton = xrButton;
-            viewerXR.modelToLoad = 'data/Small.wexbim';
+            let low_fps = document.getElementById('lower_fps');
+            let use_FFR = document.getElementById('fixed_foveation');
 
-            document.querySelector('header').appendChild(xrButton.domElement);
+            // Checks to see if WebXR is available and, if so, queries a list of
+            // XRDevices that are connected to the system.
+            function initXR() {
 
-            // Is WebXR available on this UA?
-            if (navigator.xr) {
-                // If the device allows creation of exclusive sessions set it as the
-                // target of the 'Enter XR' button.
-                navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                    xrButton.enabled = supported;
+                viewerXR = new ViewerXR(navigator.xr); //Create the xBIM XR viewer object
+
+                // Adds a helper button to the page that indicates if any XRDevices are
+                // available and let's the user pick between them if there's multiple.
+                xrButton = new WebXRButton({
+                    onRequestSession: viewerXR.onRequestSession.bind(viewerXR),
+                    onEndSession: onEndSession
                 });
+
+                //viewerXR.xrButton(xrButton);
+                //viewerXR.modelToLoad('data/Small.wexbim');
+                viewerXR.xrButton = xrButton;
+                viewerXR.modelToLoad = 'data/Small.wexbim';
+
+                document.querySelector('header').appendChild(xrButton.domElement);
+
+                // Is WebXR available on this UA?
+                if (navigator.xr) {
+                    // If the device allows creation of exclusive sessions set it as the
+                    // target of the 'Enter XR' button.
+                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                        xrButton.enabled = supported;
+                    });
+                }
             }
-        }
-        
-        
 
-        // Called when the user clicks the 'Exit XR' button. In response we end
-        // the session.
-        function onEndSession(session) {
-            session.end();
-        }
 
-        
 
-        // Start the XR application.
-        initXR();
-    </script>
-</body>
-</html>
+            // Called when the user clicks the 'Exit XR' button. In response we end
+            // the session.
+            function onEndSession(session) {
+                session.end();
+            }
+
+
+
+            // Start the XR application.
+            initXR();
+        </script>
+    </body>
+    </html>
