@@ -37,17 +37,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <body>
         <header>
             <details open>
-                <summary>V7: AR Hit Test</summary>
+                <summary>V8: AR Hit Test</summary>
                 <p>
                     This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
                     <a class="back" href="./index.html">Back</a>
-                    <br />
-                    <hr />
-                    <input id="useReticle" type="checkbox" checked>
-                    <label for="useReticle">Use reticle for placement</label><br />
-
-                    <input id="useDomOverlay" type="checkbox" checked>
-                    <label for="useDomOverlay">Enable DOM Overlay</label><br />
+                    <!--<br />-->
+                    <!--<hr />-->
+                    <!--<input id="useReticle" type="checkbox" checked>-->
+                    <!--<label for="useReticle">Use reticle for placement</label><br />-->
+                    <!--<input id="useDomOverlay" type="checkbox" checked>-->
+                    <!--<label for="useDomOverlay">Enable DOM Overlay</label><br />-->
                 </p>
             </details>
         </header>
@@ -66,21 +65,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             // If requested, initialize the WebXR polyfill
 
-            //let debugSources;
-            //if (QueryArgs.getBool('debugSources', false)) {
-            //    debugSources = new DebugSources();
-            //}
+           
 
-            // If requested, add a cross-origin iframe element via SVG
-            /*if (QueryArgs.getBool('iframe', false)) {
-                let iframe = document.createElement('iframe');
-                iframe.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect height="150" width="150" fill="red" fill-opacity="0.3"/></svg>';
-                iframe.style = 'position: absolute; right: 0; bottom: 0; width: 150px; height: 150px;';
-                document.body.insertBefore(iframe, document.body.firstChild);
-            }*/
-
-            let useReticle = document.getElementById('useReticle');
-            const useDomOverlay = document.getElementById('useDomOverlay');
+            //let useReticle = document.getElementById('useReticle');
+            //const useDomOverlay = document.getElementById('useDomOverlay');
 
             // Debugging constants.
             const unsubscribeAfterTouch = false; // unsubscribe from hit test after first touch if in reticle mode?
@@ -111,7 +99,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             let scene = new Scene();
             scene.enableStats(false);
 
-            useReticle.addEventListener('change', (ev) => {
+            /*useReticle.addEventListener('change', (ev) => {
                 if (!xrSession) return;
                 if (useReticle.checked) {
                     requestViewerSpaceHitTestSource();
@@ -119,7 +107,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     xrViewerSpaceHitTestSource = null;
                     arObject.visible = false;
                 }
-            });
+            });*/
 
             // Visualise the origin.
             if (visualizeOrigin) {
@@ -204,14 +192,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 });
                 document.querySelector('header').appendChild(xrButton.domElement);
 
-                xrButton.enabled = true;
+                //xrButton.enabled = true;
 
-                //if (navigator.xr) {
-                //    // Checks to ensure that 'immersive-ar' mode is available, and only
-                //    // enables the button if so.
-                //    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-                //        xrButton.enabled = supported;
-                //    });
+                if (navigator.xr) {
+                    // Checks to ensure that 'immersive-ar' mode is available, and only
+                    // enables the button if so.
+                    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                        xrButton.enabled = supported;
+                    });
+                }
             }
 
             function onRequestSession() {
@@ -219,12 +208,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     requiredFeatures: ['local-floor', 'hit-test'],
                     optionalFeatures: ['anchors'],
                 };
-                if (useDomOverlay.checked) {
+
+                /*if (useDomOverlay.checked) {
                     options.optionalFeatures.push('dom-overlay');
                     options.domOverlay = { root: document.body };
-                }
-                navigator.xr.requestSession('immersive-ar', options).then((session) => {
-                    session.mode = 'immersive-ar';
+                }*/
+
+                return navigator.xr.requestSession('immersive-ar', options).then((session) => {
+                    //session.mode = 'immersive-ar'; //original
+                    session.isImmersive = true; //from webxr-ar-1
                     xrButton.setSession(session);
                     onSessionStarted(session);
                 });
@@ -260,7 +252,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     xrTransientInputHitTestSource = transient_input_hit_test_source;
                 });
 
-                if (debugSources) debugSources.startSession(session);
+                //if (debugSources) debugSources.startSession(session);
 
                 if (!gl) {
                     gl = createWebGLContext({
