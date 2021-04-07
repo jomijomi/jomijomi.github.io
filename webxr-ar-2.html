@@ -29,11 +29,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     <title>AR Hit Test</title>
 
-    <link href='./css/common.css' rel='stylesheet'></link>
+    <!--<link href='./css/common.css' rel='stylesheet'></link>-->
 
 
     <!--<script src='js/util/webxr-button.js'></script>-->
-    </head>
+</head>
     <body>
         <header>
             <details open>
@@ -204,12 +204,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 });
                 document.querySelector('header').appendChild(xrButton.domElement);
 
-                //if (navigator.xr) {
-                //    // Checks to ensure that 'immersive-ar' mode is available, and only
-                //    // enables the button if so.
-                //    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-                //        xrButton.enabled = supported;
-                //    });
+                //xrButton.enabled = true;
+
+                if (navigator.xr) {
+                    // Checks to ensure that 'immersive-ar' mode is available, and only
+                    // enables the button if so.
+                    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                        xrButton.enabled = supported;
+                    });
             }
 
             function onRequestSession() {
