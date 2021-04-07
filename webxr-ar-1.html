@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   <body>
     <header>
       <details open>
-        <summary>V1: Immersive AR Session</summary>
+        <summary>V2: Immersive AR Session</summary>
         <p>
           This sample demonstrates how to use an 'immersive-ar' XRSession to
           present a simple WebGL scene to an transparent or passthrough XR
@@ -56,10 +56,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       // If requested, use the polyfill to provide support for mobile devices
       // and devices which only support WebVR.
-      import WebXRPolyfill from './js/third-party/webxr-polyfill/build/webxr-polyfill.module.js';
-      if (QueryArgs.getBool('usePolyfill', true)) {
-        let polyfill = new WebXRPolyfill();
-      }
+      //import WebXRPolyfill from './js/third-party/webxr-polyfill/build/webxr-polyfill.module.js';
+      //if (QueryArgs.getBool('usePolyfill', true)) {
+      //  let polyfill = new WebXRPolyfill();
+      //}
 
       // XR globals.
       let xrButton = null;

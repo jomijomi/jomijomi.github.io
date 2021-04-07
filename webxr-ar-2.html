@@ -20,175 +20,487 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -->
 <html>
-  <head>
+<head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
     <meta name='mobile-web-app-capable' content='yes'>
     <meta name='apple-mobile-web-app-capable' content='yes'>
-    <link rel='icon' type='image/png' sizes='32x32' href='favicon-32x32.png'>
-    <link rel='icon' type='image/png' sizes='96x96' href='favicon-96x96.png'>
-    <link rel='stylesheet' href='css/common.css'>
+    
 
-    <title>Immersive AR Session</title>
-  </head>
-  <body>
+    <title>AR Hit Test</title>
+
+    <link href='../css/common.css' rel='stylesheet'></link>
+    
+
+    <script src='./js/util/webxr-button.js'></script>
+</head>
+<body>
     <header>
-      <details open>
-        <summary>V1: Immersive AR Session</summary>
-        <p>
-          This sample demonstrates how to use an 'immersive-ar' XRSession to
-          present a simple WebGL scene to an transparent or passthrough XR
-          device. The logic is largely the same as the corresponding VR sample,
-          with the primary difference being that no background is rendered and
-          the model is scaled down for easier viewing in a real-world space.
-          <a class="back" href="./">Back</a>
-        </p>
-      </details>
+        <details open>
+            <summary>V2: AR Hit Test</summary>
+            <p>
+                This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
+                <a class="back" href="./index.html">Back</a>
+                <br />
+                <hr />
+                <input id="useReticle" type="checkbox" checked>
+                <label for="useReticle">Use reticle for placement</label><br />
+
+                <input id="useDomOverlay" type="checkbox" checked>
+                <label for="useDomOverlay">Enable DOM Overlay</label><br />
+            </p>
+        </details>
     </header>
     <script type="module">
-      import {WebXRButton} from './js/util/webxr-button.js';
-      import {Scene} from './js/render/scenes/scene.js';
-      import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
-      import {SkyboxNode} from './js/render/nodes/skybox.js';
-      import {InlineViewerHelper} from './js/util/inline-viewer-helper.js';
-      import {Gltf2Node} from './js/render/nodes/gltf2.js';
-      import {QueryArgs} from './js/util/query-args.js';
+        import { Scene } from './js/render/scenes/scene.js';
+        import { Renderer, createWebGLContext } from './js/render/core/renderer.js';
+        import { Gltf2Node } from './js/render/nodes/gltf2.js';
+        import { QueryArgs } from './js/util/query-args.js';
+        //import { FallbackHelper } from '../js/cottontail/src/util/fallback-helper.js';
+        import { Node } from './js/render/core/node.js';
+        import { RayNode } from './js/render/nodes/ray-node.js';
+        import { DropShadowNode } from './js/render/nodes/drop-shadow.js';
+        import { vec3 } from './js/render/math/gl-matrix.js';
+        //import { DebugSources } from '../js/debug-sources.js';
 
-      // If requested, use the polyfill to provide support for mobile devices
-      // and devices which only support WebVR.
-      import WebXRPolyfill from './js/third-party/webxr-polyfill/build/webxr-polyfill.module.js';
-      if (QueryArgs.getBool('usePolyfill', true)) {
-        let polyfill = new WebXRPolyfill();
-      }
+        // If requested, initialize the WebXR polyfill        
 
-      // XR globals.
-      let xrButton = null;
-      let xrImmersiveRefSpace = null;
-      let inlineViewerHelper = null;
+        //let debugSources;
+        //if (QueryArgs.getBool('debugSources', false)) {
+        //    debugSources = new DebugSources();
+        //}
 
-      // WebGL scene globals.
-      let gl = null;
-      let renderer = null;
-      let scene = new Scene();
-      let solarSystem = new Gltf2Node({url: 'media/gltf/space/space.gltf'});
-      // The solar system is big (citation needed). Scale it down so that users
-      // can move around the planets more easily.
-      solarSystem.scale = [0.1, 0.1, 0.1];
-      scene.addNode(solarSystem);
-      // Still adding a skybox, but only for the benefit of the inline view.
-      let skybox = new SkyboxNode({url: 'media/textures/milky-way-4k.png'});
-      scene.addNode(skybox);
-
-      function initXR() {
-        xrButton = new WebXRButton({
-          onRequestSession: onRequestSession,
-          onEndSession: onEndSession,
-          textEnterXRTitle: "START AR",
-          textXRNotFoundTitle: "AR NOT FOUND",
-          textExitXRTitle: "EXIT  AR",
-        });
-        document.querySelector('header').appendChild(xrButton.domElement);
-
-        if (navigator.xr) {
-          // Checks to ensure that 'immersive-ar' mode is available, and only
-          // enables the button if so.
-          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-            xrButton.enabled = supported;
-          });
-
-          navigator.xr.requestSession('inline').then(onSessionStarted);
+        // If requested, add a cross-origin iframe element via SVG
+        if (QueryArgs.getBool('iframe', false)) {
+            let iframe = document.createElement('iframe');
+            iframe.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect height="150" width="150" fill="red" fill-opacity="0.3"/></svg>';
+            iframe.style = 'position: absolute; right: 0; bottom: 0; width: 150px; height: 150px;';
+            document.body.insertBefore(iframe, document.body.firstChild);
         }
-      }
 
-      function onRequestSession() {
-        // Requests an 'immersive-ar' session, which ensures that the users
-        // environment will be visible either via video passthrough or a
-        // transparent display. This may be presented either in a headset or
-        // fullscreen on a mobile device.
-        return navigator.xr.requestSession('immersive-ar')
-            .then((session) => {
-              xrButton.setSession(session);
-              session.isImmersive = true;
-              onSessionStarted(session);
+        let useReticle = document.getElementById('useReticle');
+        const useDomOverlay = document.getElementById('useDomOverlay');
+
+        // Debugging constants.
+        const unsubscribeAfterTouch = false; // unsubscribe from hit test after first touch if in reticle mode?
+        const visualizeOffsetSpace = false;
+        const visualizeObjectSpace = false;
+        const visualizeOrigin = false;
+        const visualizeLocalFloorSpace = false;
+
+        // Suppress XR events for interactions with the DOM overlay
+        document.querySelector('header').addEventListener('beforexrselect', (ev) => {
+            console.log(ev.type);
+            ev.preventDefault();
+        });
+
+        // XR globals.
+        let xrSession = null;
+        let xrButton = null;
+        let xrRefSpace = null;
+        let xrLocalFloor = null;
+        let xrViewerSpace = null;
+        let xrOffsetSpace = null;
+        let xrViewerSpaceHitTestSource = null;
+        let xrTransientInputHitTestSource = null;
+
+        // WebGL scene globals.
+        let gl = null;
+        let renderer = null;
+        let scene = new Scene();
+        scene.enableStats(false);
+
+        useReticle.addEventListener('change', (ev) => {
+            if (!xrSession) return;
+            if (useReticle.checked) {
+                requestViewerSpaceHitTestSource();
+            } else {
+                xrViewerSpaceHitTestSource = null;
+                arObject.visible = false;
+            }
+        });
+
+        // Visualise the origin.
+        if (visualizeOrigin) {
+            let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+            let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+            let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+            scene.addNode(xRay);
+            scene.addNode(yRay);
+            scene.addNode(zRay);
+        }
+
+        // Visualise the offset space.
+        let offsetSpaceNode = new Node();
+        offsetSpaceNode.visible = false;
+
+        if (visualizeOffsetSpace) {
+            let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+            let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+            let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+            offsetSpaceNode.addNode(xRay);
+            offsetSpaceNode.addNode(yRay);
+            offsetSpaceNode.addNode(zRay);
+        }
+
+        scene.addNode(offsetSpaceNode);
+
+        // Visualize local floor space
+        let localFloorSpaceNode = new Node();
+        localFloorSpaceNode.visible = false;
+
+        if (visualizeLocalFloorSpace) {
+            let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+            let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+            let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+            localFloorSpaceNode.addNode(xRay);
+            localFloorSpaceNode.addNode(yRay);
+            localFloorSpaceNode.addNode(zRay);
+        }
+
+        scene.addNode(localFloorSpaceNode);
+
+        // -----------------------------------------------------------------------
+
+        let arObject = new Node();
+        arObject.visible = false;
+        scene.addNode(arObject);
+
+        let flower = new Gltf2Node({ url: 'media/gltf/sunflower/sunflower.gltf' });
+        arObject.addNode(flower);
+
+        // Having a really simple drop shadow underneath an object helps ground
+        // it in the world without adding much complexity.
+        let shadow = new DropShadowNode();
+        vec3.set(shadow.scale, 0.15, 0.15, 0.15);
+        arObject.addNode(shadow);
+
+        const MAX_FLOWERS = 30;
+        let flowers = [];
+
+        // Ensure the background is transparent for AR.
+        scene.clear = false;
+
+        function initXR() {
+            xrButton = new XRDeviceButton({
+                onRequestSession: onRequestSession,
+                onEndSession: onEndSession,
+                textEnterXRTitle: "START AR",
+                textXRNotFoundTitle: "AR NOT FOUND",
+                textExitXRTitle: "EXIT  AR",
+                supportedSessionTypes: ['immersive-ar']
             });
-      }
-
-      function initGL() {
-        if (gl)
-          return;
-
-        gl = createWebGLContext({
-          xrCompatible: true
-        });
-        document.body.appendChild(gl.canvas);
-
-        function onResize() {
-          gl.canvas.width = gl.canvas.clientWidth * window.devicePixelRatio;
-          gl.canvas.height = gl.canvas.clientHeight * window.devicePixelRatio;
-        }
-        window.addEventListener('resize', onResize);
-        onResize();
-
-        renderer = new Renderer(gl);
-
-        scene.setRenderer(renderer);
-      }
-
-      function onSessionStarted(session) {
-        session.addEventListener('end', onSessionEnded);
-
-        if (session.isImmersive) {
-          // When in 'immersive-ar' mode don't draw an opaque background because
-          // we want the real world to show through.
-          skybox.visible = false;
+            document.querySelector('header').appendChild(xrButton.domElement);
         }
 
-        initGL();
-
-        session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
-
-        let refSpaceType = session.isImmersive ? 'local' : 'viewer';
-        session.requestReferenceSpace(refSpaceType).then((refSpace) => {
-          if (session.isImmersive) {
-            xrImmersiveRefSpace = refSpace;
-          } else {
-            inlineViewerHelper = new InlineViewerHelper(gl.canvas, refSpace);
-          }
-          session.requestAnimationFrame(onXRFrame);
-        });
-      }
-
-      function onEndSession(session) {
-        session.end();
-      }
-
-      function onSessionEnded(event) {
-        if (event.session.isImmersive) {
-          xrButton.setSession(null);
-          // Turn the background back on when we go back to the inlive view.
-          skybox.visible = true;
+        function onRequestSession() {
+            let options = {
+                requiredFeatures: ['local-floor', 'hit-test'],
+                optionalFeatures: ['anchors'],
+            };
+            if (useDomOverlay.checked) {
+                options.optionalFeatures.push('dom-overlay');
+                options.domOverlay = { root: document.body };
+            }
+            navigator.xr.requestSession('immersive-ar', options).then((session) => {
+                session.mode = 'immersive-ar';
+                xrButton.setSession(session);
+                onSessionStarted(session);
+            });
         }
-      }
 
-      // Called every time a XRSession requests that a new frame be drawn.
-      function onXRFrame(t, frame) {
-        let session = frame.session;
-        let refSpace = session.isImmersive ?
-                         xrImmersiveRefSpace :
-                         inlineViewerHelper.referenceSpace;
-        let pose = frame.getViewerPose(refSpace);
+        function requestViewerSpaceHitTestSource() {
+            console.debug("Requesting hit test source.");
+            xrSession.requestHitTestSource({
+                space: xrViewerSpace,
+                //space : xrLocalFloor, // WIP: change back to viewer
+                //space : xrOffsetSpace, // WIP: change back to viewer
+                offsetRay: new XRRay()
+                //offsetRay : new XRRay({}, {y: -0.5, z: 1.0}) // WIP: change back to default
+            }).then((hitTestSource) => {
+                console.debug("Hit test source created.");
+                xrViewerSpaceHitTestSource = hitTestSource;
+            }).catch(error => {
+                console.error("Error when requesting hit test source", error);
+            });
+        }
 
-        scene.startFrame();
+        function onSessionStarted(session) {
+            useDomOverlay.disabled = true;
+            xrSession = session;
+            session.addEventListener('end', onSessionEnded);
+            session.addEventListener('select', onSelect);
+            session.addEventListener('inputsourceschange', onInputSourcesChange);
 
-        session.requestAnimationFrame(onXRFrame);
+            session.requestHitTestSourceForTransientInput({
+                profile: "generic-touchscreen"
+            }).then(transient_input_hit_test_source => {
+                console.debug("Hit test source for generic touchscreen created!");
+                xrTransientInputHitTestSource = transient_input_hit_test_source;
+            });
 
-        scene.drawXRFrame(frame, pose);
+            if (debugSources) debugSources.startSession(session);
 
-        scene.endFrame();
-      }
+            if (!gl) {
+                gl = createWebGLContext({
+                    xrCompatible: true
+                });
 
-      // Start the XR application.
-      initXR();
+                renderer = new Renderer(gl);
+
+                scene.setRenderer(renderer);
+            }
+
+            session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+            session.requestReferenceSpace('local').then((refSpace) => {
+                xrRefSpace = refSpace;
+
+                session.requestReferenceSpace('local-floor').then((localFloor) => {
+                    xrLocalFloor = localFloor;
+
+                    session.requestReferenceSpace('viewer').then((viewerSpace) => {
+                        xrViewerSpace = viewerSpace;
+
+                        xrOffsetSpace = xrViewerSpace.getOffsetReferenceSpace(
+                            new XRRigidTransform(new DOMPointReadOnly(0.1, 0, 0.5))
+                        );
+
+                        if (useReticle.checked) {
+                            requestViewerSpaceHitTestSource();
+                        }
+
+                        session.requestAnimationFrame(onXRFrame);
+                    });
+                });
+            });
+        }
+
+        function onEndSession(session) {
+            session.end();
+        }
+
+        function onSessionEnded(event) {
+            useDomOverlay.disabled = false;
+            xrButton.setSession(null);
+            xrSession = null;
+        }
+
+        function onCreateAnchor(anchor) {
+            console.debug("Anchor created");
+
+            anchor.context = {};
+
+            let sceneObject = arObject.clone();
+            sceneObject.visible = false;
+
+            if (visualizeObjectSpace) {
+                let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+                let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+                let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+                sceneObject.addNode(xRay);
+                sceneObject.addNode(yRay);
+                sceneObject.addNode(zRay);
+            }
+
+            scene.addNode(sceneObject);
+            flowers.push(sceneObject);
+
+            anchor.context.sceneObject = sceneObject;
+            sceneObject.anchor = anchor;
+
+            // For performance reasons if we add too many objects start
+            // removing the oldest ones to keep the scene complexity
+            // from growing too much.
+            if (flowers.length > MAX_FLOWERS) {
+                let oldFlower = flowers.shift();
+                oldFlower.anchor.delete();
+                scene.removeNode(oldFlower);
+            }
+        }
+
+        // Adds a new object to the scene at the
+        // specificed transform.
+        function addARObjectAt(frame, hitTestResult) {
+            if ("createAnchor" in hitTestResult) {
+                hitTestResult.createAnchor(new XRRigidTransform())
+                    .then(onCreateAnchor)
+                    .catch((err) => console.log("Anchor creation failed", err));
+            } else {
+                console.debug("Anchors not available, falling back to legacy approach.");
+                // Fall back to the old approach:
+                let sceneObject = arObject.clone();
+                sceneObject.visible = false;
+
+                if (visualizeObjectSpace) {
+                    let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+                    let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+                    let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+                    sceneObject.addNode(xRay);
+                    sceneObject.addNode(yRay);
+                    sceneObject.addNode(zRay);
+                }
+
+                sceneObject.matrix = hitTestResult.getPose(xrRefSpace).transform.matrix;
+                sceneObject.visible = true;
+
+                scene.addNode(sceneObject);
+                flowers.push(sceneObject);
+
+                // For performance reasons if we add too many objects start
+                // removing the oldest ones to keep the scene complexity
+                // from growing too much.
+                if (flowers.length > MAX_FLOWERS) {
+                    let oldFlower = flowers.shift();
+                    scene.removeNode(oldFlower);
+                }
+            }
+        }
+
+        function DOMPointFromVec3(vector) {
+            return { x: vector[0], y: vector[1], z: vector[2] }
+        }
+
+        let rayOrigin = vec3.create();
+        let rayDirection = vec3.create();
+
+        function onSelect(event) {
+            if (useReticle.checked && xrViewerSpaceHitTestSource) {
+                let results = event.frame.getHitTestResults(xrViewerSpaceHitTestSource);
+
+                // Use the results to place our proxy object.
+                if (results.length) {
+                    let hitResult = results[0];
+                    addARObjectAt(event.frame, hitResult);
+                }
+
+            } else if (!useReticle.checked && xrTransientInputHitTestSource) {
+                let results_by_input_source = event.frame.getHitTestResultsForTransientInput(xrTransientInputHitTestSource);
+
+                if (results_by_input_source.length && results_by_input_source[0].results.length) {
+                    let hitResult = results_by_input_source[0].results[0];
+                    addARObjectAt(event.frame, hitResult);
+                }
+            }
+
+            // Test the cancel method.
+            if (useReticle.checked && unsubscribeAfterTouch && xrViewerSpaceHitTestSource) {
+                xrViewerSpaceHitTestSource.cancel();
+
+                try {
+                    xrViewerSpaceHitTestSource.cancel();
+                    console.error("double-canceling hit test source should throw!");
+                } catch (ex) {
+                    console.debug(ex);
+                }
+
+                xrViewerSpaceHitTestSource = null;
+            }
+        }
+
+        function onInputSourcesChange(inputSourcesChangeEvent) {
+            console.debug("Input sources changed!", inputSourcesChangeEvent);
+        }
+
+        // Set with all anchors tracked in a previous frame.
+        let all_previous_anchors = new Set();
+
+        // Called every time a XRSession requests that a new frame be drawn.
+        function onXRFrame(t, frame) {
+            let session = frame.session;
+            session.requestAnimationFrame(onXRFrame);
+
+            if (debugSources) debugSources.update(frame, xrViewerSpace);
+
+            let pose = frame.getViewerPose(xrRefSpace);
+            let viewerSpacePose = frame.getPose(xrViewerSpace, xrRefSpace);
+            let offsetSpacePose = frame.getPose(xrOffsetSpace, xrRefSpace);
+            let localFloorSpacePose = frame.getPose(xrLocalFloor, xrRefSpace);
+
+            // Offset space visualization.
+            if (visualizeOffsetSpace && offsetSpacePose) {
+                offsetSpaceNode.matrix = offsetSpacePose.transform.matrix;
+                offsetSpaceNode.visible = true;
+            } else {
+                offsetSpaceNode.visible = false;
+            }
+
+            if (visualizeLocalFloorSpace && localFloorSpacePose) {
+                localFloorSpaceNode.matrix = localFloorSpacePose.transform.matrix;
+                localFloorSpaceNode.visible = true;
+            } else {
+                localFloorSpaceNode.visible = false;
+            }
+
+            if ("trackedAnchors" in frame) {
+                const tracked_anchors = frame.trackedAnchors;
+                if (tracked_anchors) {
+                    all_previous_anchors.forEach(anchor => {
+                        if (!tracked_anchors.has(anchor)) {
+                            scene.removeNode(anchor.sceneObject);
+                        }
+                    });
+
+                    tracked_anchors.forEach(anchor => {
+                        const anchorPose = frame.getPose(anchor.anchorSpace, xrRefSpace);
+                        if (anchorPose) {
+                            anchor.context.sceneObject.matrix = anchorPose.transform.matrix;
+                            anchor.context.sceneObject.visible = true;
+                        } else {
+                            anchor.context.sceneObject.visible = false;
+                        }
+                    });
+
+                    all_previous_anchors = tracked_anchors;
+                } else {
+                    all_previous_anchors.forEach(anchor => {
+                        scene.removeNode(anchor.sceneObject);
+                    });
+
+                    all_previous_anchors = new Set();
+                }
+            }
+
+            if (useReticle.checked && xrViewerSpaceHitTestSource) {
+                let results = frame.getHitTestResults(xrViewerSpaceHitTestSource);
+
+                // Use the results to place our proxy object.
+                if (results.length) {
+                    let hitResult = results[0];
+                    arObject.visible = true;
+                    arObject.matrix = hitResult.getPose(xrRefSpace).transform.matrix;
+                } else {
+                    arObject.visible = false;
+                }
+
+            } else if (!useReticle.checked && xrTransientInputHitTestSource) {
+                let results_by_input_source = frame.getHitTestResultsForTransientInput(xrTransientInputHitTestSource);
+
+                if (results_by_input_source.length && results_by_input_source[0].results.length) {
+                    let hitResult = results_by_input_source[0].results[0];
+                    arObject.visible = true;
+                    arObject.matrix = hitResult.getPose(xrRefSpace).transform.matrix;
+                } else {
+                    arObject.visible = false;
+                }
+            } else {
+                arObject.visible = false;
+            }
+
+            scene.startFrame();
+
+            scene.drawXRFrame(frame, pose);
+
+            scene.endFrame();
+        }
+
+        // Start the XR application.
+        initXR();
     </script>
-  </body>
+</body>
 </html>
