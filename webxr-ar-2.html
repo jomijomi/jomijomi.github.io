@@ -37,7 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <body>
         <header>
             <details open>
-                <summary>V6: AR Hit Test</summary>
+                <summary>V7: AR Hit Test</summary>
                 <p>
                     This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
                     <a class="back" href="./index.html">Back</a>
@@ -204,14 +204,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 });
                 document.querySelector('header').appendChild(xrButton.domElement);
 
-                //xrButton.enabled = true;
+                xrButton.enabled = true;
 
-                if (navigator.xr) {
-                    // Checks to ensure that 'immersive-ar' mode is available, and only
-                    // enables the button if so.
-                    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-                        xrButton.enabled = supported;
-                    });
+                //if (navigator.xr) {
+                //    // Checks to ensure that 'immersive-ar' mode is available, and only
+                //    // enables the button if so.
+                //    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                //        xrButton.enabled = supported;
+                //    });
             }
 
             function onRequestSession() {
