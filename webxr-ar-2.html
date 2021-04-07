@@ -37,16 +37,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <body>
         <header>
             <details open>
-                <summary>V8: AR Hit Test</summary>
+                <summary>V10: AR Hit Test</summary>
                 <p>
                     This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
                     <a class="back" href="./index.html">Back</a>
                     <!--<br />-->
                     <!--<hr />-->
-                    <!--<input id="useReticle" type="checkbox" checked>-->
-                    <!--<label for="useReticle">Use reticle for placement</label><br />-->
-                    <!--<input id="useDomOverlay" type="checkbox" checked>-->
-                    <!--<label for="useDomOverlay">Enable DOM Overlay</label><br />-->
+                    <input id="useReticle" type="checkbox" checked>
+                    <label for="useReticle">Use reticle for placement</label><br />
+                    <input id="useDomOverlay" type="checkbox" checked>
+                    <label for="useDomOverlay">Enable DOM Overlay</label><br />
                 </p>
             </details>
         </header>
@@ -67,8 +67,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
            
 
-            //let useReticle = document.getElementById('useReticle');
-            //const useDomOverlay = document.getElementById('useDomOverlay');
+            let useReticle = document.getElementById('useReticle');
+            const useDomOverlay = document.getElementById('useDomOverlay');
 
             // Debugging constants.
             const unsubscribeAfterTouch = false; // unsubscribe from hit test after first touch if in reticle mode?
@@ -99,7 +99,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             let scene = new Scene();
             scene.enableStats(false);
 
-            /*useReticle.addEventListener('change', (ev) => {
+            useReticle.addEventListener('change', (ev) => {
                 if (!xrSession) return;
                 if (useReticle.checked) {
                     requestViewerSpaceHitTestSource();
@@ -107,7 +107,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     xrViewerSpaceHitTestSource = null;
                     arObject.visible = false;
                 }
-            });*/
+            });
 
             // Visualise the origin.
             if (visualizeOrigin) {
@@ -209,10 +209,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     optionalFeatures: ['anchors'],
                 };
 
-                /*if (useDomOverlay.checked) {
+                if (useDomOverlay.checked) {
                     options.optionalFeatures.push('dom-overlay');
                     options.domOverlay = { root: document.body };
-                }*/
+                }
 
                 return navigator.xr.requestSession('immersive-ar', options).then((session) => {
                     //session.mode = 'immersive-ar'; //original
@@ -425,7 +425,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 let session = frame.session;
                 session.requestAnimationFrame(onXRFrame);
 
-                if (debugSources) debugSources.update(frame, xrViewerSpace);
+                //if (debugSources) debugSources.update(frame, xrViewerSpace);
 
                 let pose = frame.getViewerPose(xrRefSpace);
                 let viewerSpacePose = frame.getPose(xrViewerSpace, xrRefSpace);
