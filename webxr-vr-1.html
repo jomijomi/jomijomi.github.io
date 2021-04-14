@@ -21,11 +21,12 @@ https://immersive-web.github.io/webxr-samples/
         <details open>
             <summary>Testing WebXR (VR)</summary>
             <p>
-                V79: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
+                V80: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
                 The scene is not rendered to the actual webpage, only VR.
                 Quest 1: Small will work well. Medium will work well at lower FPS.
                 Quest 2: Small, Medium will work well. Large is just at the threshold.
             </p>
+            <div id="TheBrowser"></div>
             <label>Choose a model: </label>
             <select id="model_select">
                 <option value='data/Small.wexbim'>
@@ -66,6 +67,11 @@ https://immersive-web.github.io/webxr-samples/
                 </option>
             </select>
             <br />
+            <script>
+                var txt = "";                
+                txt += "<p>User-agent header: " + navigator.userAgent + "</p>";
+                document.getElementById("TheBrowser").innerHTML = txt;
+            </script>
         </details>
         </header>
         <main style='text-align: center;'>
