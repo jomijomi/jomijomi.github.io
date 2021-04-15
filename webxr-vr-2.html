@@ -14,14 +14,14 @@ https://immersive-web.github.io/webxr-samples/
     <link rel='icon' type='image/png' sizes='96x96' href='favicon-96x96.png'>
     <link rel='stylesheet' href='css/common.css'>
     <title>IFC WebXR Test 2</title>
-    <script src="scripts/xbim.js"></script>
+    <script src="scripts/xbimxr.js"></script>
 </head>
 <body>
     <header>
         <details open>
             <summary>Testing WebXR (VR)</summary>
             <p>
-                V80: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
+                V81: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
                 The scene is not rendered to the actual webpage, only VR.
                 Quest 1: Small will work well. Medium will work well at lower FPS.
                 Quest 2: Small, Medium will work well. Large is just at the threshold.
@@ -114,21 +114,23 @@ https://immersive-web.github.io/webxr-samples/
                     onEndSession: onEndSession
                 });
 
-                //viewerXR.xrButton(xrButton);
-                //viewerXR.modelToLoad('data/Small.wexbim');
-                viewerXR.xrButton = xrButton;
+
+                //Now handled in ViewerXR class:
+                //viewerXR.xrButton = xrButton;
+
                 viewerXR.modelToLoad = 'data/Small.wexbim';
 
-                document.querySelector('header').appendChild(xrButton.domElement);
+                //Below is now handled in ViewerXR class:
+                //document.querySelector('header').appendChild(xrButton.domElement);
 
-                // Is WebXR available on this UA?
-                if (navigator.xr) {
-                    // If the device allows creation of exclusive sessions set it as the
-                    // target of the 'Enter XR' button.
-                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                        xrButton.enabled = supported;
-                    });
-                }
+                //// Is WebXR available on this UA?
+                //if (navigator.xr) {
+                //    // If the device allows creation of exclusive sessions set it as the
+                //    // target of the 'Enter XR' button.
+                //    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                //        xrButton.enabled = supported;
+                //    });
+                //}
             }
 
 
