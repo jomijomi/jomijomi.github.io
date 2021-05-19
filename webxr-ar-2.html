@@ -37,7 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <body>
         <header>
             <details open>
-                <summary>V14: AR Hit Test</summary>
+                <summary>V15: AR Hit Test</summary>
                 <p>
                     This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
                     NOTE: Navigate to chrome://flags and enable webxr-incubations
@@ -76,7 +76,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             const visualizeOffsetSpace = false;
             const visualizeObjectSpace = false;
             const visualizeOrigin = false;
-            const visualizeLocalFloorSpace = false;
+            const visualizeLocalFloorSpace = true; //DALMAN - try this
 
             // Suppress XR events for interactions with the DOM overlay
             /*document.querySelector('header').addEventListener('beforexrselect', (ev) => {
@@ -268,9 +268,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
-                //DALMAN - testing unbounded
-                //session.requestReferenceSpace('local').then((refSpace) => {
-                session.requestReferenceSpace('unbounded').then((refSpace) => {
+                //DALMAN - testing unbounded - not working
+                session.requestReferenceSpace('local').then((refSpace) => {                
                     xrRefSpace = refSpace;
 
                     session.requestReferenceSpace('local-floor').then((localFloor) => {
