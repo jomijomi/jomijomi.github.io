@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
           <details open>
-            <summary>V2: Immersive AR Session</summary>
+            <summary>V3: Immersive AR Session</summary>
             <p>
                 This sample demonstrates how to use an 'immersive-ar' XRSession to
                 present a simple WebGL scene to an transparent or passthrough XR
@@ -63,23 +63,78 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           //  let polyfill = new WebXRPolyfill();
           //}
 
+          
+
+
+
           // XR globals.
           let xrButton = null;
           let xrImmersiveRefSpace = null;
           let inlineViewerHelper = null;
 
+            let scaleFactor = 0.1;
+            let scaleDelta = 0.01;
+
           // WebGL scene globals.
           let gl = null;
           let renderer = null;
-          let scene = new Scene();
+            let scene = new Scene();
+
+
           let solarSystem = new Gltf2Node({url: 'media/gltf/space/space.gltf'});
           // The solar system is big (citation needed). Scale it down so that users
           // can move around the planets more easily.
-          solarSystem.scale = [0.1, 0.1, 0.1];
+          //solarSystem.scale = [0.1, 0.1, 0.1];
+            solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
           scene.addNode(solarSystem);
           // Still adding a skybox, but only for the benefit of the inline view.
           let skybox = new SkyboxNode({url: 'media/textures/milky-way-4k.png'});
           scene.addNode(skybox);
+
+
+            //Touch variables
+            let lastTouchX_1;
+            let lastTouchY_1;
+            let lastTouchX_2;
+            let lastTouchY_2;
+
+            function handleTouchStart(event) {
+                if (event.touches.length >= 1) {
+                    lastTouchX_1 = event.touches[0].clientX;
+                    lastTouchY_1 = event.touches[0].clientY;
+                }
+
+                if (event.touches.length >= 2) {
+                    lastTouchX_2 = event.touches[1].clientX;
+                    lastTouchY_2 = event.touches[1].clientY;
+                }
+            }
+
+            function handleTouchMove(event) {
+                if (!event.touches) {
+                    return;
+                }
+
+                if (event.touches.length === 1) {
+                    // touch move with single finger -> orbit
+                    var deltaX = event.touches[0].clientX - lastTouchX_1;
+                    var deltaY = event.touches[0].clientY - lastTouchY_1;
+                    lastTouchX_1 = event.touches[0].clientX;
+                    lastTouchY_1 = event.touches[0].clientY;
+
+                    if (deltaX > 0) {
+                        scaleFactor = scaleFactor + scaleDelta;
+                    }
+                    else {
+                        scaleFactor = scaleFactor - scaleDelta;
+                    }
+
+                    solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
+
+                }
+            }
+          //END - Touch variables
+
 
           function initXR() {
             xrButton = new WebXRButton({
@@ -145,7 +200,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               skybox.visible = false;
             }
 
-            initGL();
+              initGL();
+
+              gl.canvas.addEventListener('touchstart', handleTouchStart);
+              gl.canvas.addEventListener('touchmove', handleTouchStart);
 
             session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
