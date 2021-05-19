@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
             <details open>
-                <summary>V9: Immersive AR Session</summary>
+                <summary>V11: Immersive AR Session</summary>
                 <p>
                     This sample demonstrates how to use an 'immersive-ar' XRSession to
                     present a simple WebGL scene to an transparent or passthrough XR
@@ -145,10 +145,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                         scaleFactor = scaleFactor - scaleDelta;
                     }
 
-                    solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];                    
+                    var txt = "<p> Touch move delta: " + deltaX + " </p>";
+                    document.getElementById("TheBrowser").innerHTML = txt;
+
+                    solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
 
                     solarSystem.setMatrixDirty();
 
+                }
+                else {
+                    var txt = "<p> Touch move (no delta) </p>";
+                    document.getElementById("TheBrowser").innerHTML = txt;
                 }
             }
           //END - Touch variables
