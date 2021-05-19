@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
             <details open>
-                <summary>V13: Immersive AR Session</summary>
+                <summary>V14: Immersive AR Session</summary>
                 <p>
                     This sample demonstrates how to use an 'immersive-ar' XRSession to
                     present a simple WebGL scene to an transparent or passthrough XR
@@ -46,6 +46,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                     <a class="back" href="./">Back</a>
                 </p>
                 <div id="TheBrowser"></div>
+                <div id="TheBrowser2"></div>
+                <div id="TheBrowser3"></div>
             </details>
         </header>
         <script type="module">
@@ -132,13 +134,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 }
 
                 if (event.touches.length === 1) {
+
+                    var txt = "<p> Touch move client X: " + event.touches[0].clientX + " </p>";
+                    document.getElementById("TheBrowser").innerHTML = txt;
+
+                    var txt2 = "<p> lastTouchX_1: " + lastTouchX_1 + " </p>";
+                    document.getElementById("TheBrowser2").innerHTML = txt2;
+
                     // touch move with single finger -> orbit
                     var deltaX = event.touches[0].clientX - lastTouchX_1;
                     var deltaY = event.touches[0].clientY - lastTouchY_1;
                     lastTouchX_1 = event.touches[0].clientX;
                     lastTouchY_1 = event.touches[0].clientY;
 
-                    if (deltaX > 0) {
+                    if (deltaX > 0.0) {
                         scaleFactor = scaleFactor + scaleDelta;
                     }
                     else {
@@ -147,11 +156,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                     //var txt = "<p> Touch move delta: " + deltaX + " </p>";
                     //var txt = "<p> Touch move delta: " + deltaX + " </p>";
-                    var txt = "<p> Touch move client X: " + event.touches[0].clientX + " </p>";
-                    document.getElementById("TheBrowser").innerHTML = txt;
+                    var txt3 = "<p> Touch move delta: " + deltaX + " </p>";
+                    document.getElementById("TheBrowser3").innerHTML = txt3;
 
                     solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
-
                     solarSystem.setMatrixDirty();
 
                 }
