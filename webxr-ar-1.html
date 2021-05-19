@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
             <details open>
-                <summary>V8: Immersive AR Session</summary>
+                <summary>V9: Immersive AR Session</summary>
                 <p>
                     This sample demonstrates how to use an 'immersive-ar' XRSession to
                     present a simple WebGL scene to an transparent or passthrough XR
@@ -101,15 +101,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
             function handleTouchStart(event) {
 
-            scaleFactor = scaleFactor - scaleDelta;            
-            solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
-            solarSystem.setMatrixDirty();
+            //scaleFactor = scaleFactor - scaleDelta;            
+            //solarSystem.scale = [scaleFactor, scaleFactor, scaleFactor];
+            //solarSystem.setMatrixDirty();
 
-                var txt = "<p> Touch start </p>";
-                document.getElementById("TheBrowser").innerHTML = txt;
+                
                 if (event.touches.length >= 1) {
                     lastTouchX_1 = event.touches[0].clientX;
                     lastTouchY_1 = event.touches[0].clientY;
+
+                    var txt = "<p> Touch start: " + lastTouchX_1 + " </p>";
+                    document.getElementById("TheBrowser").innerHTML = txt;
+                }
+                else {
+                    var txt = "<p> Touch start  (no X) </p>";
+                    document.getElementById("TheBrowser").innerHTML = txt;
                 }
 
                 if (event.touches.length >= 2) {
