@@ -37,7 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     <body>
         <header>
             <details open>
-                <summary>V13: AR Hit Test</summary>
+                <summary>V14: AR Hit Test</summary>
                 <p>
                     This sample demonstrates use of hit testing to place AR objects on real-world surfaces.
                     NOTE: Navigate to chrome://flags and enable webxr-incubations
@@ -268,7 +268,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
                 session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
-                session.requestReferenceSpace('local').then((refSpace) => {
+                //DALMAN - testing unbounded
+                //session.requestReferenceSpace('local').then((refSpace) => {
+                session.requestReferenceSpace('unbounded').then((refSpace) => {
                     xrRefSpace = refSpace;
 
                     session.requestReferenceSpace('local-floor').then((localFloor) => {
