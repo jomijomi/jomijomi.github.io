@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
           <details open>
-            <summary>V4: Immersive AR Session</summary>
+            <summary>V5: Immersive AR Session</summary>
             <p>
                 This sample demonstrates how to use an 'immersive-ar' XRSession to
                 present a simple WebGL scene to an transparent or passthrough XR
@@ -162,7 +162,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             // environment will be visible either via video passthrough or a
             // transparent display. This may be presented either in a headset or
             // fullscreen on a mobile device.
-            return navigator.xr.requestSession('immersive-ar')
+              let options = {                  
+                  optionalFeatures: ['dom-overlay']
+              };
+
+              options.domOverlay = { root: document.body };
+
+            return navigator.xr.requestSession('immersive-ar', options)
                 .then((session) => {
                   xrButton.setSession(session);
                   session.isImmersive = true;
@@ -202,8 +208,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
               initGL();
 
-              gl.canvas.addEventListener('touchstart', handleTouchStart);
-              gl.canvas.addEventListener('touchmove', handleTouchMove);
+              //gl.canvas.addEventListener('touchstart', handleTouchStart);
+              //gl.canvas.addEventListener('touchmove', handleTouchMove);
+
+              window.addEventListener('touchstart', (event) => handleTouchStart(event), true);
+              window.addEventListener('touchmove', (event) => handleTouchMove(event), true);
 
             session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
