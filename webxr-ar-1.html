@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       <body>
         <header>
           <details open>
-            <summary>V3: Immersive AR Session</summary>
+            <summary>V4: Immersive AR Session</summary>
             <p>
                 This sample demonstrates how to use an 'immersive-ar' XRSession to
                 present a simple WebGL scene to an transparent or passthrough XR
@@ -203,7 +203,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
               initGL();
 
               gl.canvas.addEventListener('touchstart', handleTouchStart);
-              gl.canvas.addEventListener('touchmove', handleTouchStart);
+              gl.canvas.addEventListener('touchmove', handleTouchMove);
 
             session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
 
