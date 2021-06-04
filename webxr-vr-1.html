@@ -13,19 +13,21 @@ https://immersive-web.github.io/webxr-samples/
     <link rel='icon' type='image/png' sizes='32x32' href='favicon-32x32.png'>
     <link rel='icon' type='image/png' sizes='96x96' href='favicon-96x96.png'>
     <link rel='stylesheet' href='css/common.css'>
-    <title>IFC WebXR Test 2</title>
-    <script src="scripts/xbim.js"></script>
+    <title>IFC WebXR Test 1</title>
+    <script src="scripts/xbim-viewer-xr.js"></script>
 </head>
 <body>
     <header>
         <details open>
             <summary>Testing WebXR (VR)</summary>
             <p>
-                V80: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
-                The scene is not rendered to the actual webpage, only VR.
+                v0.3: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
                 Quest 1: Small will work well. Medium will work well at lower FPS.
-                Quest 2: Small, Medium will work well. Large is just at the threshold.
+                Quest 2: All models should work well.
             </p>
+            <div>
+                Frames per second: <span id="fps">0</span>
+            </div>
             <div id="TheBrowser"></div>
             <label>Choose a model: </label>
             <select id="model_select">
@@ -38,10 +40,19 @@ https://immersive-web.github.io/webxr-samples/
                 <option value='data/Large.wexbim'>
                     Large
                 </option>
-                <option value='data/LakesideRestaurant.wexbim'>
-                    Other
+                <option value='data/rst_advanced_sample_project_2021_m.wexbim'>
+                    RVT ADV Structural
+                </option>
+                <option value='data/rac_advanced_sample_project_2021_m_mod.wexbim'>
+                    RVT ADV
+                </option>
+                <option value='data/rac_advanced_sample_project_2021_m_ext.wexbim'>
+                    RVT ADV EXTENDED
                 </option>
             </select>
+            <br />
+            <br />
+            <input type="checkbox" id="use_back_face_culling" checked>Use back-face culling in XR</input>
             <br />
             <input type="checkbox" id="lower_fps">Force lower refresh rate</input>
             <br />
@@ -50,7 +61,7 @@ https://immersive-web.github.io/webxr-samples/
     <input type="checkbox" id="fixed_foveation">Lower resolution at edges (Note: This setting *might* not have any effect...)</input>
     <br />
     -->
-            <br />
+
             <label>Fixed foveation (FFR) settings: </label>
             <select id="fixed_foveation">
                 <option value='no-fixed-foveation'>
@@ -67,6 +78,22 @@ https://immersive-web.github.io/webxr-samples/
                 </option>
             </select>
             <br />
+            <br />
+            <button id="button_hide_walls">Hide walls</button>
+            <button id="button_hide_plates">Hide plates</button>
+            <button id="button_hide_members">Hide members</button>
+            <button id="button_hide_railings">Hide railings</button>
+            <br />
+            <button id="button_hide_proxy">Hide proxies</button>
+            <button id="button_hide_furniture">Hide furniture</button>
+            <button id="button_hide_all">Hide all</button>
+            <br />
+
+            <button id="button_isolate_walls">Isolate walls</button>
+            <br />
+
+            <button id="button_reset_state">Reset state (show all)</button>
+            <br />
             <script>
                 var theUAString = navigator.userAgent;
                 var txt = "";
@@ -79,70 +106,172 @@ https://immersive-web.github.io/webxr-samples/
                 document.getElementById("TheBrowser").innerHTML = txt;
             </script>
         </details>
-        </header>
+    </header>
+    <canvas id="viewer" width="500" height="300"></canvas>
+    <!--
         <main style='text-align: center;'>
             <p>Click 'Enter XR' to see content</p>
         </main>
-        <script type="module">
-            import { WebXRButton } from './js/util/webxr-button.js';
-            //import {Scene} from './js/render/scenes/scene.js';
-            //import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
-            import { createWebGLContext } from './js/render/core/renderer.js';
-            //import {Gltf2Node} from './js/render/nodes/gltf2.js';
-            //import {SkyboxNode} from './js/render/nodes/skybox.js';
-            import { QueryArgs } from './js/util/query-args.js';
-
-            // XR globals.
-            let xrButton = null;
+    -->
+    <script type="module">
+        //import { WebXRButton } from './js/util/webxr-button.js';
+        //import {Scene} from './js/render/scenes/scene.js';
+        //import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
 
 
-            var viewerXR = null;
+        // xBIM/XR globals.
+        //let xrButton = null;
+        var viewer = null;
+        var currentModelId = 0;
+        var currentModelTag = null;
+        
+        // Checks to see if WebXR is available and, if so, queries a list of
+        // XRDevices that are connected to the system.
+        function initXR() {
 
-            let low_fps = document.getElementById('lower_fps');
-            let use_FFR = document.getElementById('fixed_foveation');
+            document.getElementById("model_select").onchange = function () {
+                var e = document.getElementById("model_select");
 
-            // Checks to see if WebXR is available and, if so, queries a list of
-            // XRDevices that are connected to the system.
-            function initXR() {
+                console.log(e.value);
+                console.log(e.options[e.selectedIndex].text);
 
-                viewerXR = new ViewerXR(navigator.xr); //Create the xBIM XR viewer object
+                if (viewer) {
+                    if (currentModelId > 0) {
 
-                // Adds a helper button to the page that indicates if any XRDevices are
-                // available and let's the user pick between them if there's multiple.
-                xrButton = new WebXRButton({
-                    onRequestSession: viewerXR.onRequestSession.bind(viewerXR),
-                    onEndSession: onEndSession
-                });
+                        viewer.unload(currentModelId);
 
-                //viewerXR.xrButton(xrButton);
-                //viewerXR.modelToLoad('data/Small.wexbim');
-                viewerXR.xrButton = xrButton;
-                viewerXR.modelToLoad = 'data/Small.wexbim';
+                        //In a perfect world we should actually wait for the 'unloaded' event, but this will have to do for now...
+                        currentModelId = 0;
+                        currentModelTag = null;
+                    }
 
-                document.querySelector('header').appendChild(xrButton.domElement);
-
-                // Is WebXR available on this UA?
-                if (navigator.xr) {
-                    // If the device allows creation of exclusive sessions set it as the
-                    // target of the 'Enter XR' button.
-                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-                        xrButton.enabled = supported;
-                    });
+                    viewer.load(e.value, e.options[e.selectedIndex].text);
                 }
-            }
+            };
+
+            document.getElementById("fixed_foveation").onchange = function () {
+                console.log('fixed_foveation onchange');
+                var e = document.getElementById("fixed_foveation");
+                
+                if (viewer) {                    
+                    viewer.fixedFoveationLevel = e.selectedIndex;
+                }
+            };
+
+            document.getElementById("use_back_face_culling").onclick = function () {
+                console.log('use_back_face_culling onclick');
+                var e = document.getElementById("use_back_face_culling");
+                if (viewer) {                    
+                    viewer.useBackFaceCullingInXR = e.checked;
+                }
+            };
+
+            document.getElementById("lower_fps").onclick = function () {
+                console.log('lower_fps onclick');
+                var e = document.getElementById("lower_fps");
+                if (viewer) {
+                    viewer.useLowFps = e.checked;
+                }
+            };
+
+            document.getElementById("button_hide_walls").onclick = function () {                
+                console.log('button_hide_walls onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 452); //IfcWall
+                }
+            };
+
+            document.getElementById("button_hide_plates").onclick = function () {
+                console.log('button_hide_plates onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 351); //IfcPlate
+                }
+            };
+
+            document.getElementById("button_hide_members").onclick = function () {
+                console.log('button_hide_members onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 310); //IfcMember
+                }
+            };
+
+            document.getElementById("button_hide_railings").onclick = function () {
+                console.log('button_hide_railings onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 350); //IfcRailing
+                }
+            };
+
+            document.getElementById("button_hide_proxy").onclick = function () {
+                console.log('button_hide_proxy onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 560); //IFCBUILDINGELEMENTPROXY = 560
+                }
+            };
+
+            document.getElementById("button_hide_furniture").onclick = function () {
+                console.log('button_hide_furniture onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 253); //IFCFURNISHINGELEMENT = 253
+                }
+            };
+
+            document.getElementById("button_hide_all").onclick = function () {
+                console.log('button_hide_all onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 20); //IfcProduct
+                }
+            };
+
+            document.getElementById("button_isolate_walls").onclick = function () {
+                console.log('button_isolate_walls onclick');
+                if (viewer) {
+                    viewer.setState(State.HIDDEN, 20); //IfcProduct
+                    viewer.setState(State.UNDEFINED, 452); //IfcWall
+                }
+            };
+
+            document.getElementById("button_reset_state").onclick = function () {
+                console.log('button_reset_state onclick');
+                if (viewer) {
+                    viewer.resetState();
+                }
+            };
+            
+            viewer = new Viewer('viewer');
+            
+            viewer.on('loaded', (modelInfoObj) => {
+                console.log('modelInfoObj.model:');
+                console.log(modelInfoObj.model);
+                console.log('modelInfoObj.tag:');
+                console.log(modelInfoObj.tag);
+
+                currentModelId = modelInfoObj.model;
+                currentModelTag = modelInfoObj.tag;
+                
+                viewer.show(ViewType.DEFAULT);
+                
+            });
+
+            viewer.on('fps', function (fps) {
+                var span = document.getElementById('fps');
+                if (span) {
+                    span.innerHTML = fps;
+                }
+            });
+
+            //Make sure we have one model loaded by default
+            viewer.load('data/Small.wexbim', 'Small');
+            //viewer.load('data/Large.wexbim', 'Large');
+            //viewer.load('data/Small.wexbim', 'Small');
+            //viewer.load('data/LakesideRestaurant.wexbim', 'Other');
+            
+            viewer.start();
+        }
 
 
-
-            // Called when the user clicks the 'Exit XR' button. In response we end
-            // the session.
-            function onEndSession(session) {
-                session.end();
-            }
-
-
-
-            // Start the XR application.
-            initXR();
-        </script>
-    </body>
-    </html>
+        // Start the XR application.
+        initXR();
+    </script>
+</body>
+        </html>
