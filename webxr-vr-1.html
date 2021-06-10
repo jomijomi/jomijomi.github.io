@@ -21,7 +21,7 @@ https://immersive-web.github.io/webxr-samples/
         <details open>
             <summary>Testing WebXR (VR)</summary>
             <p>
-                v0.3: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
+                v0.3.2: IFC-files in WebXR (i.e. VR). Fly navigation using joysticks.
                 Quest 1: Small will work well. Medium will work well at lower FPS.
                 Quest 2: All models should work well.
             </p>
@@ -29,6 +29,10 @@ https://immersive-web.github.io/webxr-samples/
                 Frames per second: <span id="fps">0</span>
             </div>
             <div id="TheBrowser"></div>
+            <div id="DbgTxt1"></div>
+            <div id="DbgTxt2"></div>
+            <div id="DbgTxt3"></div>
+            <div id="DbgTxt4"></div>
             <label>Choose a model: </label>
             <select id="model_select">
                 <option value='data/Small.wexbim'>
@@ -94,17 +98,25 @@ https://immersive-web.github.io/webxr-samples/
 
             <button id="button_reset_state">Reset state (show all)</button>
             <br />
-            <script>
-                var theUAString = navigator.userAgent;
-                var txt = "";
-                if (theUAString.includes("Quest")) {
-                    txt += "<p> We are running on Quest! </p>";
-                }
-                else {
-                    txt += "<p>User-agent header: " + navigator.userAgent + "</p>";
-                }
-                document.getElementById("TheBrowser").innerHTML = txt;
-            </script>
+            <br />
+            <div id="NavigationModeDiv"></div>
+            <button id="button_orbit">ORBIT</button>
+            <button id="button_zoom">ZOOM</button>
+            <button id="button_pan">PAN</button>
+            <br />
+            <!--
+    <script>
+        var theUAString = navigator.userAgent;
+        var txt = "";
+        if (theUAString.includes("Quest")) {
+            txt += "<p> We are running on Quest! </p>";
+        }
+        else {
+            txt += "<p>User-agent header: " + navigator.userAgent + "</p>";
+        }
+        document.getElementById("TheBrowser").innerHTML = txt;
+    </script>
+    -->
         </details>
     </header>
     <canvas id="viewer" width="500" height="300"></canvas>
@@ -120,11 +132,84 @@ https://immersive-web.github.io/webxr-samples/
 
 
         // xBIM/XR globals.
+        let hasAddedEventListener = false;
+
         //let xrButton = null;
         var viewer = null;
         var currentModelId = 0;
         var currentModelTag = null;
-        
+
+        function handleTouchMove(event) {
+
+            //var txt1 = "<p> mousedown  </p>";
+            //document.getElementById("DbgTxt1").innerHTML = txt1;
+
+            var txt1 = "<p> touchmove (X): " + event.touches[0].clientX + " </p>";
+            document.getElementById("DbgTxt1").innerHTML = txt1;
+            var txt2 = "<p> touchmove (Y): " + event.touches[0].clientY + " </p>";
+            document.getElementById("DbgTxt2").innerHTML = txt2;
+        }
+
+        function handleTouchStart(event) {
+
+            //var txt1 = "<p> touchstart  </p>";
+            //document.getElementById("DbgTxt3").innerHTML = txt1;
+
+            //event.touches.length
+
+            var txt1 = "<p> touchstart (touches.length): " + event.touches.length + " </p>";
+            document.getElementById("DbgTxt3").innerHTML = txt1;
+
+            //event.targetTouches.length
+            var txt2 = "<p> touchstart (targetTouches.length): " + event.targetTouches.length + " </p>";
+            document.getElementById("DbgTxt4").innerHTML = txt2;
+        }
+
+        function handleScroll(event) {
+
+            var txt1 = "<p> scrolling  </p>";
+            document.getElementById("DbgTxt3").innerHTML = txt1;
+
+            //event.touches.length
+
+            //var txt1 = "<p> touchstart (touches.length): " + event.touches.length + " </p>";
+            //document.getElementById("DbgTxt3").innerHTML = txt1;
+
+            ////event.targetTouches.length
+            //var txt2 = "<p> touchstart (targetTouches.length): " + event.targetTouches.length + " </p>";
+            //document.getElementById("DbgTxt4").innerHTML = txt2;
+        }
+
+        function handleWheel(event) {
+
+            var txt1 = "<p> wheeling  </p>";
+            document.getElementById("DbgTxt4").innerHTML = txt1;            
+        }
+
+        function handleKeyDown(event) {
+
+            var txt1 = "<p> keydown  </p>";
+            document.getElementById("DbgTxt2").innerHTML = txt1;
+        }
+
+        function handleMouseMove(event) {
+            var txt0 = "X=" + event.clientX + ", Y=" + event.clientY;
+            var txt1 = "<p> mousemove: " + txt0 + " </p> ";
+            document.getElementById("DbgTxt1").innerHTML = txt1;
+        }
+
+        function handleMouseDown(event) {
+            var txt0 = "X=" + event.clientX + ", Y=" + event.clientY;
+            var txt1 = "<p> mousedown: " + txt0 + " </p> ";
+            document.getElementById("DbgTxt2").innerHTML = txt1;
+        }
+
+        function handleMouseUp(event) {
+            var txt0 = "X=" + event.clientX + ", Y=" + event.clientY;
+            var txt1 = "<p> mouseup: " + txt0 + " </p> ";
+            document.getElementById("DbgTxt3").innerHTML = txt1;
+        }
+
         // Checks to see if WebXR is available and, if so, queries a list of
         // XRDevices that are connected to the system.
         function initXR() {
@@ -237,6 +322,55 @@ https://immersive-web.github.io/webxr-samples/
                     viewer.resetState();
                 }
             };
+
+            document.getElementById("button_orbit").onclick = function () {                
+                if (viewer) {
+                    viewer.navigationMode = 'orbit';
+
+                    var txt1 = "<p> NAVIGATION MODE: ORBIT </p>";
+                    document.getElementById("NavigationModeDiv").innerHTML = txt1;
+                }
+            };
+
+            document.getElementById("button_zoom").onclick = function () {
+                if (viewer) {
+                    viewer.navigationMode = 'zoom';
+
+                    var txt1 = "<p> NAVIGATION MODE: ZOOM </p>";
+                    document.getElementById("NavigationModeDiv").innerHTML = txt1;
+                }
+            };
+
+            document.getElementById("button_pan").onclick = function () {
+                if (viewer) {
+                    viewer.navigationMode = 'pan';
+
+                    var txt1 = "<p> NAVIGATION MODE: PAN </p>";
+                    document.getElementById("NavigationModeDiv").innerHTML = txt1;
+                }
+            };
+
+            if (!hasAddedEventListener) {
+                var txt1 = "<p> NAVIGATION MODE: ORBIT </p>";
+                document.getElementById("NavigationModeDiv").innerHTML = txt1;
+            }
+
+            if (!hasAddedEventListener) {
+                var e = document.getElementById("viewer");
+                //e.addEventListener('mousedown', (event) => handleMouseDown(event), true);
+                ////window.addEventListener('mousedown', (event) => handleMouseDown(event), true);
+                ////window.addEventListener('touchmove', (event) => handleTouchMove(event), true);
+
+                //e.addEventListener('touchmove', (event) => handleTouchMove(event), true);
+                //e.addEventListener('touchstart', (event) => handleTouchStart(event), true);
+                //e.addEventListener('scroll', (event) => handleScroll(event), true);
+                //e.addEventListener('wheel', (event) => handleWheel(event), true);
+                //e.addEventListener('keydown', (event) => handleKeyDown(event), true);
+                //e.addEventListener('mousemove', (event) => handleMouseMove(event), true);
+                //e.addEventListener('mousedown', (event) => handleMouseDown(event), true);
+                //e.addEventListener('mouseup', (event) => handleMouseUp(event), true);
+                hasAddedEventListener = true;
+            }
             
             viewer = new Viewer('viewer');
             
