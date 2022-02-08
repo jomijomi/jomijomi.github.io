@@ -1,0 +1,255 @@
+{
+    "asset" : {
+        "version" : "2.0",
+        "generator" : "Khronos glTF Blender I/O v1.2.20"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "nodes" : [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "name" : "Scene"
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "translation" : [
+                0.8485021591186523,
+                0.09409284591674805,
+                -2.037029266357422
+            ],
+            "name" : "Cone"
+        },
+        {
+            "mesh" : 1,
+            "translation" : [
+                -0.48752498626708984,
+                -0.9644899368286133,
+                2.2925894260406494
+            ],
+            "name" : "Cylinder"
+        },
+        {
+            "mesh" : 2,
+            "name" : "Cube"
+        },
+        {
+            "translation" : [
+                4.076245307922363,
+                5.903861999511719,
+                -1.0054539442062378
+            ],
+            "name" : "Lamp",
+            "rotation" : [
+                0.16907575726509094,
+                0.7558803558349609,
+                -0.27217137813568115,
+                0.570947527885437
+            ]
+        },
+        {
+            "translation" : [
+                7.481131553649902,
+                5.34366512298584,
+                6.5076398849487305
+            ],
+            "name" : "Camera",
+            "rotation" : [
+                0.483536034822464,
+                0.33687159419059753,
+                -0.20870360732078552,
+                0.7804827094078064
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "pbrMetallicRoughness" : {},
+            "name" : "Material"
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Cone",
+            "primitives" : [
+                {
+                    "indices" : 2,
+                    "attributes" : {
+                        "NORMAL" : 0,
+                        "POSITION" : 1
+                    }
+                }
+            ]
+        },
+        {
+            "name" : "Cylinder",
+            "primitives" : [
+                {
+                    "indices" : 5,
+                    "attributes" : {
+                        "NORMAL" : 3,
+                        "POSITION" : 4
+                    }
+                }
+            ]
+        },
+        {
+            "name" : "Cube",
+            "primitives" : [
+                {
+                    "indices" : 8,
+                    "material" : 0,
+                    "attributes" : {
+                        "NORMAL" : 6,
+                        "POSITION" : 7
+                    }
+                }
+            ]
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "type" : "VEC3",
+            "count" : 128,
+            "componentType" : 5126
+        },
+        {
+            "max" : [
+                1,
+                1,
+                1
+            ],
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "min" : [
+                -1,
+                -1,
+                -1
+            ],
+            "count" : 128,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "type" : "SCALAR",
+            "count" : 186,
+            "componentType" : 5123
+        },
+        {
+            "bufferView" : 3,
+            "type" : "VEC3",
+            "count" : 192,
+            "componentType" : 5126
+        },
+        {
+            "max" : [
+                1,
+                1,
+                1
+            ],
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "min" : [
+                -1,
+                -1,
+                -1
+            ],
+            "count" : 192,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 5,
+            "type" : "SCALAR",
+            "count" : 372,
+            "componentType" : 5123
+        },
+        {
+            "bufferView" : 6,
+            "type" : "VEC3",
+            "count" : 24,
+            "componentType" : 5126
+        },
+        {
+            "max" : [
+                1.0000004768371582,
+                1,
+                1.0000005960464478
+            ],
+            "bufferView" : 7,
+            "componentType" : 5126,
+            "min" : [
+                -1.0000003576278687,
+                -1,
+                -1.0000003576278687
+            ],
+            "count" : 24,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 8,
+            "type" : "SCALAR",
+            "count" : 36,
+            "componentType" : 5123
+        }
+    ],
+    "bufferViews" : [
+        {
+            "byteOffset" : 0,
+            "buffer" : 0,
+            "byteLength" : 1536
+        },
+        {
+            "byteOffset" : 1536,
+            "buffer" : 0,
+            "byteLength" : 1536
+        },
+        {
+            "byteOffset" : 3072,
+            "buffer" : 0,
+            "byteLength" : 372
+        },
+        {
+            "byteOffset" : 3444,
+            "buffer" : 0,
+            "byteLength" : 2304
+        },
+        {
+            "byteOffset" : 5748,
+            "buffer" : 0,
+            "byteLength" : 2304
+        },
+        {
+            "byteOffset" : 8052,
+            "buffer" : 0,
+            "byteLength" : 744
+        },
+        {
+            "byteOffset" : 8796,
+            "buffer" : 0,
+            "byteLength" : 288
+        },
+        {
+            "byteOffset" : 9084,
+            "buffer" : 0,
+            "byteLength" : 288
+        },
+        {
+            "byteOffset" : 9372,
+            "buffer" : 0,
+            "byteLength" : 72
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 9444,
+            "uri" : "Testing_01.bin"
+        }
+    ]
+}

@@ -1,0 +1,795 @@
+﻿<!doctype html>
+<!--
+Copyright 2018 The Immersive Web Community Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+
+    <title>AR Depth API v01</title>
+
+    <link href='./css/common.css' rel='stylesheet'></link>
+
+    <!--The polyfill is not needed for browser that have native API support,
+        but is linked by these samples for wider compatibility.-->
+    <!--script src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js'></script-->
+    <!--<script src='../js/xrray-polyfill.js' type='module'></script>-->
+        <!--<script src='../js/webxr-polyfill.js'></script>-->
+
+        <script src='./js/util2/webxr-button.js'></script>
+        <style>
+            #text-info {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: large;
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <details open>
+                <summary>AR Depth API - CPU access</summary>
+                <p>
+                    This sample demonstrates use of a depth API in immersive-ar session.
+                    The data will be accessed from a CPU.
+                    <a class="back" href="./index.html">Back</a>
+                </p>
+            </details>
+        </header>
+        <div id="text-overlay">
+            <div id="text-info"></div>
+        </div>
+        <script id="vertexShader" type="x-shader/x-vertex">
+            precision mediump float;
+
+            attribute vec2 aVertexPosition;
+            attribute float aDepthDistance;
+
+            uniform float uPointSize;
+
+            varying float vDepthDistance;
+
+            void main(void) {
+            gl_PointSize = uPointSize;
+            gl_Position = vec4(aVertexPosition, -1.0, 1.0);
+            vDepthDistance = aDepthDistance;
+            }
+        </script>
+        <script id="fragmentShader" type="x-shader/x-fragment" src="./shaders/depth-api-cpu.frag">
+        </script>
+        <script id="turboFragment" type="x-shader/x-fragment" src="./shaders/turbo.glsl">
+        </script>
+
+        <script type="module" async>
+            import { mat4, vec3, mat3, vec2, vec4 } from './js/render/math/gl-matrix.js';
+            import { Scene } from './js/render/scenes/scene.js'; //DALMAN
+            import { Renderer } from './js/render/core/renderer.js'; //DALMAN
+            import { Gltf2Node } from './js/render/nodes/gltf2.js'; //DALMAN                        
+            import { Node } from './js/render/core/node.js'; //DALMAN
+            import { RayNode } from './js/render/nodes/ray-node.js'; //DALMAN
+
+            // XR globals.
+            let xrButton = null;
+            let xrRefSpace = null;
+            let xrSession = null; //DALMAN - Need to have access to session object!
+            let xrViewerSpace = null; //DALMAN - For hit test
+            let xrViewerSpaceHitTestSource = null; //DALMAN - For hit test
+
+            // WebGL scene globals.
+            let gl = null;
+            let shaderProgram = null;
+            let programInfo = null;
+            let vertexBuffer = null;
+            
+            let renderer = null; //DALMAN
+            let scene = new Scene(); //DALMAN
+            scene.enableStats(false); //DALMAN
+            // Ensure the background is transparent for AR.
+            scene.clear = false; //DALMAN
+
+            //DALMAN:
+            let g_poseMat = mat3.create(); //initialized to identity (I assume...)
+            let g_lookDir = vec3.create(); //Initialized to [0,0,0]
+            g_lookDir[2] = -1.0; //default look dir, negative z dir
+
+            //DALMAN - BEGIN
+            // Visualise the origin.
+            let visualizeOrigin = true; //DALMAN
+            if (visualizeOrigin) {
+                let xRay = new RayNode({ direction: [5, 0, 0], baseColor: [1, 0, 0, 1] });
+                let yRay = new RayNode({ direction: [0, 5, 0], baseColor: [0, 1, 0, 1] });
+                let zRay = new RayNode({ direction: [0, 0, 5], baseColor: [0, 0, 1, 1] });
+
+                scene.addNode(xRay);
+                scene.addNode(yRay);
+                scene.addNode(zRay);
+            }
+            //DALMAN - END
+
+            //DALMAN - BEGIN
+            let arObject = new Node();
+            arObject.visible = false;
+            scene.addNode(arObject);
+
+            let arObject2 = new Node();
+            arObject2.visible = false;
+            scene.addNode(arObject2);
+
+            //let flower = new Gltf2Node({ url: 'media/gltf/sunflower/sunflower.gltf' });
+            let box = new Gltf2Node({ url: 'media/gltf/green_box/green_box_2.gltf' });
+            //let box = new Gltf2Node({ url: 'media/gltf/green_box/green_box_3.gltf' });
+            //let circle = new Gltf2Node({ url: 'media/gltf/reticle/reticle.gltf' });
+            let circle = new Gltf2Node({ url: 'media/gltf/green_box/green_box_3.gltf' });
+            //vec3.set(circle.scale, 0.15, 0.15, 0.15);
+            vec3.set(circle.scale, 0.3, 0.3, 0.3);
+            arObject.addNode(circle);
+
+            //vec3.set(box.scale, 0.15, 0.15, 0.15);
+            vec3.set(box.scale, 0.3, 0.3, 0.3);
+            arObject2.addNode(box);
+            //DALMAN - END
+
+            // shader code
+            let vertexShaderSource = null;
+            let fragmentShaderSource = null;
+
+            const textOverlayElement = document.querySelector("#text-overlay");
+            if (!textOverlayElement) {
+                console.error("#text-overlay element not found!");
+                throw new Error("#text-overlay element not found!");
+            }
+
+            const textInfoElement = document.querySelector("#text-info");
+            if (!textInfoElement) {
+                console.error("#text-info element not found!");
+                throw new Error("#text-info element not found!");
+            }
+
+            function initXR() {
+                xrButton = new XRDeviceButton({
+                    onRequestSession: onRequestSession,
+                    onEndSession: onEndSession,
+                    textEnterXRTitle: "START AR",
+                    textXRNotFoundTitle: "AR NOT FOUND",
+                    textExitXRTitle: "EXIT  AR",
+                    supportedSessionTypes: ['immersive-ar']
+                });
+                document.querySelector('header').appendChild(xrButton.domElement);
+            }
+
+            //DALMAN - BEGIN
+            function requestViewerSpaceHitTestSource() {
+                console.debug("Requesting hit test source.");
+                //textInfoElement.innerHTML = "Requesting hit test source.";
+                xrSession.requestHitTestSource({
+                    space: xrViewerSpace,
+                    //space : xrLocalFloor, // WIP: change back to viewer
+                    //space : xrOffsetSpace, // WIP: change back to viewer
+                    offsetRay: new XRRay()
+                    //offsetRay : new XRRay({}, {y: -0.5, z: 1.0}) // WIP: change back to default
+                }).then((hitTestSource) => {
+                    console.debug("Hit test source created.");
+                    xrViewerSpaceHitTestSource = hitTestSource;
+                    //textInfoElement.innerHTML = "Hit test source created.";
+                }).catch(error => {
+                    console.error("Error when requesting hit test source", error);
+                    //textInfoElement.innerHTML = "Error when requesting hit test source";
+                });
+            }
+            //DALMAN - END
+
+            function onRequestSession() {
+                // Requests an immersive session with environment integration.
+
+                let options = {
+                    requiredFeatures: ['depth-sensing', 'dom-overlay', 'hit-test'], //DALMAN - Adding hit-test
+                    domOverlay: { root: textOverlayElement },
+                    depthSensing: {
+                        usagePreference: ["cpu-optimized"],
+                        dataFormatPreference: ["luminance-alpha"],
+                        //dataFormatPreference: ["float32"],
+                    }
+                };
+
+                navigator.xr.requestSession('immersive-ar', options).then((session) => {
+                    session.mode = 'immersive-ar';
+                    xrButton.setSession(session);
+
+                    fetchShaders().then(() => {
+                        onSessionStarted(session);
+                    })
+                });
+            }
+
+            function onSessionStarted(session) {
+                xrSession = session; //DALMAN
+                session.addEventListener('end', onSessionEnded);
+
+                let canvas = document.createElement('canvas');
+                //canvas.width = 400; //DALMAN - Test
+                //canvas.height = 400; //DALMAN - Test
+                gl = canvas.getContext('webgl', {
+                    xrCompatible: true
+                });
+
+                renderer = new Renderer(gl); //DALMAN
+                scene.setRenderer(renderer); //DALMAN
+
+                initializeGL();
+
+                session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+                session.requestReferenceSpace('local').then((refSpace) => {
+                    xrRefSpace = refSpace;
+
+                    //DALMAN - BEGIN
+                    session.requestReferenceSpace('viewer').then((viewerSpace) => {
+                        xrViewerSpace = viewerSpace;
+
+                        //xrOffsetSpace = xrViewerSpace.getOffsetReferenceSpace(
+                        //    new XRRigidTransform(new DOMPointReadOnly(0.1, 0, 0.5))
+                        //);
+
+                        //if (useReticle.checked) {
+                            requestViewerSpaceHitTestSource();
+                        //}
+
+                        //session.requestAnimationFrame(onXRFrame);
+                    });
+                    //DALMAN - END
+
+                    session.requestAnimationFrame(onXRFrame);
+                });
+
+                if (session.depthUsage != "cpu-optimized") {
+                    textInfoElement.innerHTML = "Unsupported depth API usage!";
+                    throw new Error("Unsupported depth API usage!");
+                }
+
+                //textInfoElement.innerHTML = session.depthUsage; //DEBUG
+
+                
+                if (session.depthDataFormat != "luminance-alpha") {
+                    textInfoElement.innerHTML = "Unsupported depth data format!";
+                    throw new Error("Unsupported depth data format!");
+                }
+
+                //textInfoElement.innerHTML = session.depthDataFormat; //DEBUG
+            }
+
+            function onEndSession(session) {
+                session.end();
+            }
+
+            function onSessionEnded(event) {
+                xrButton.setSession(null);
+            }
+
+            // Helper, fetches shader source code based on the passed in ID of the <script> element.
+            // Will inspect src attribute value and issue fetch API call to obtain the script body.
+            async function fetchShader(id) {
+                const element = document.getElementById(id);
+                const url = element.src;
+
+                const response = await fetch(url);
+                const text = await response.text();
+
+                return text;
+            }
+
+            async function fetchShaders() {
+                vertexShaderSource = document.getElementById('vertexShader').textContent;
+                fragmentShaderSource = await fetchShader("fragmentShader") + "\n"
+                    + await fetchShader("turboFragment");
+
+            }
+
+            function initializeGL() {
+                shaderProgram = initShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+                programInfo = {
+                    program: shaderProgram,
+                    attribLocations: {
+                        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+                        depthDistance: gl.getAttribLocation(shaderProgram, 'aDepthDistance'),
+                    },
+                    uniformLocations: {
+                        pointSize: gl.getUniformLocation(shaderProgram, 'uPointSize'),
+                        alpha: gl.getUniformLocation(shaderProgram, 'uAlpha'),
+                    },
+                };
+
+                vertexBuffer = gl.createBuffer();
+            }
+
+            function initShaderProgram(vsSource, fsSource) {
+                const vertexShader = loadShader(gl.VERTEX_SHADER, vsSource);
+                const fragmentShader = loadShader(gl.FRAGMENT_SHADER, fsSource);
+
+                // Create the shader program
+                const shaderProgram = gl.createProgram();
+                gl.attachShader(shaderProgram, vertexShader);
+                gl.attachShader(shaderProgram, fragmentShader);
+                gl.linkProgram(shaderProgram);
+
+                // If creating the shader program failed, alert
+                if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+                    alert("Unable to initialize the shader program: " +
+                        gl.getProgramInfoLog(shaderProgram)
+                    );
+                    return null;
+                }
+
+                return shaderProgram;
+            }
+
+            function loadShader(type, source) {
+                const shader = gl.createShader(type);
+
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    alert(
+                        "An error occurred compiling the shaders: " +
+                        gl.getShaderInfoLog(shader)
+                    );
+                    gl.deleteShader(shader);
+                    return null;
+                }
+
+                return shader;
+            }
+
+            function MinDiff(out, P, Pr, Pl) {
+
+                let V1 = vec3.subtract(vec3.create(), Pr, P); //vec3 V1 = Pr - P;
+                let V2 = vec3.subtract(vec3.create(), P, Pl); //vec3 V2 = P - Pl;
+
+                //return (dot(V1,V1) < dot(V2,V2)) ? V1 : V2;
+                if (vec3.dot(V1, V1) < vec3.dot(V2, V2)) {
+                    out[0] = V1[0];
+                    out[1] = V1[1];
+                    out[2] = V1[2];
+                } else {
+                    out[0] = V2[0];
+                    out[1] = V2[1];
+                    out[2] = V2[2];
+                }
+
+                return out;
+            }
+
+            // Component-wise multiplication of 2 vec3s:
+            function scaleByVec(out, lhs, rhs) {
+                out[0] = lhs[0] * rhs[0];
+                out[1] = lhs[1] * rhs[1];
+                out[2] = lhs[2] * rhs[2];
+
+                return out;
+            }
+
+            function clamp(out, input, lower_bound, upper_bound) {
+                out[0] = Math.max(lower_bound[0], Math.min(input[0], upper_bound[0]));
+                out[1] = Math.max(lower_bound[1], Math.min(input[1], upper_bound[1]));
+                out[2] = Math.max(lower_bound[2], Math.min(input[2], upper_bound[2]));
+
+                return out;
+            }
+
+            // Called every time a XRSession requests that a new frame be drawn.
+            function onXRFrame(t, frame) {
+                const session = frame.session;
+                session.requestAnimationFrame(onXRFrame);
+
+                //textInfoElement.innerHTML = "NEAR: " + session.renderState.depthNear + ", FAR: " + session.renderState.depthFar;
+
+                const baseLayer = session.renderState.baseLayer;
+
+                const pose = frame.getViewerPose(xrRefSpace);
+
+                if (pose) {
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+
+                    // Clear the framebuffer
+                    gl.clearColor(0, 0, 0, 0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+                    for (const view of pose.views) {
+                        const viewport = baseLayer.getViewport(view);
+                        gl.viewport(viewport.x, viewport.y,
+                            viewport.width, viewport.height);
+
+                        const depthData = frame.getDepthInformation(view);
+                        let distance_m = 0.0;
+                        if (depthData) {
+                            //DALMAN - Display depth (in meters)
+                            //textInfoElement.innerHTML = "";
+                            distance_m = depthData.getDepthInMeters(0.5, 0.5);
+                            //textInfoElement.innerHTML = "Depth (m): " + distance_m;
+                            //NOTE: distance_m is from the near plane!!! Need to reduce by far plane dist in order to get
+                            //distance from eye/camera
+                            //distance_m += session.renderState.depthNear
+
+                            /*
+                            const uint16 = new Uint16Array(depthData.data);
+                            const column = depthData.width / 2;
+                            const row = depthData.height / 2;
+                            const index = column + row * depthData.width;
+                            //const depthInMeters = uint16[index] * depthData.rawValueToMeters;
+                            const depthInMeters = uint16[index];
+                            */
+
+                            //textInfoElement.innerHTML = "D1: " + distance_m + ", W: " + depthData.width + ", H: " + depthData.height;
+
+                            //DALMAN - Reverse-project to get world-space XYZ position. From Morgan McGuire SSAO-code
+                            let projInfo = vec4.create();
+                            projInfo[0] = -2.0 / (depthData.width * view.projectionMatrix[0]); //row, column = (0,0)
+                            projInfo[1] = -2.0 / (depthData.height * view.projectionMatrix[5]); //row, column = (1,1)
+                            projInfo[2] = (1.0 - view.projectionMatrix[8]) / view.projectionMatrix[0]; //row, column = (0,2)
+                            projInfo[3] = (1.0 + view.projectionMatrix[9]) / view.projectionMatrix[5]; //row, column = (1,2)                            
+
+                            //Morgans code assumes negative z-values (as we look in negative z-dir), 
+                            //but we get positive z-values from WebXR, so we have to negate
+                            let distance_m_neg = distance_m * (-1.0); 
+                            let eyeSpacePos = vec3.create();
+                            //Once again, shader code from Morgan McGuire SSAO:
+                            eyeSpacePos[0] = (depthData.width * 0.5 * projInfo[0] + projInfo[2]) * distance_m_neg;
+                            eyeSpacePos[1] = (depthData.height * 0.5 * projInfo[1] + projInfo[3]) * distance_m_neg;
+                            eyeSpacePos[2] = distance_m_neg;
+
+                            //Now, in order to get the normal (in eye-space) we need:
+                            /*
+                            vec3 reconstructCSPosition(vec2 S, float z) {
+                                return vec3((S.xy * projInfo.xy + projInfo.zw) * z, z);
+                            }
+                            
+                            vec3 getPosition(ivec2 ssP) {
+                                vec3 P;
+                                P.z = texelFetch(CS_Z_buffer, ssP, 0).r;
+
+                                // Offset to pixel center
+                                P = reconstructCSPosition(vec2(ssP) + vec2(0.5), P.z);
+
+                                return P;
+                            }
+
+                            //getPosition is the one we use above
+                            vec3 MinDiff(vec3 P, vec3 Pr, vec3 Pl)
+                            {
+                                vec3 V1 = Pr - P;
+                                vec3 V2 = P - Pl;
+                                return (dot(V1,V1) < dot(V2,V2)) ? V1 : V2;
+                            }
+
+                            vec3 ReconstructNormal(ivec2 UV, vec3 P)
+                            {
+                              vec3 Pr = getPosition(UV + ivec2(1, 0));
+                              vec3 Pl = getPosition(UV + ivec2(-1, 0));
+                              vec3 Pt = getPosition(UV + ivec2(0, 1));
+                              vec3 Pb = getPosition(UV + ivec2(0, -1));
+                              return normalize(cross(MinDiff(P, Pr, Pl), MinDiff(P, Pt, Pb)));
+                            }
+                            // Pixel being shaded
+                            ivec2 ssC = fragCoord;
+                            // World space point being shaded
+                            vec3 C = getPosition(ssC);
+                            vec3 n_C = -ReconstructNormal(ssC, C); //Construct from several positions (more accurate, but also more expensive)
+                             */
+
+                            //Now, transform to world-space
+                            //This is a bit strange, normally you would use the inverse viewMatrix to go from eye-space to world-space
+                            //(because you use the viewMatrix to go from world-space to eye-space), however, this might not be the actual
+                            //viewMatrix, but instead the transform from origo, which means that for rendering we would use view.transform.inverse.matrix???
+                            //Yes, look at xBIM WebXR implementation (in drawXR in viewer.ts), we actually use the view.transform.inverse.matrix as the viewMatrix
+                            //It all makes sense now!!!!!
+                            //let wsPos = vec3.transformMat4(vec3.create(), eyeSpacePos, view.transform.inverse.matrix);
+                            let wsPos = vec3.transformMat4(vec3.create(), eyeSpacePos, view.transform.matrix);
+
+                            let arObjMat = mat4.create();
+                            mat4.fromTranslation(arObjMat, wsPos);
+                            arObject2.matrix = arObjMat;
+                            arObject2.visible = true;
+                            
+
+                            renderDepthInformationCPU(depthData, view, viewport);
+                        } else {
+                            //textInfoElement.innerHTML = "Depth data unavailable in the current frame!";
+                        }
+
+                        let getDirFromPose = false;
+
+                        if (getDirFromPose && pose.transform) {                        
+
+                            //arObject2.visible = true;
+                            if (pose.transform.matrix) {
+                                //reset to "looking in negative z-dir" (default coord sys)
+                                g_lookDir[0] = 0.0;
+                                g_lookDir[1] = 0.0;
+                                g_lookDir[2] = -1.0;
+                                
+                                //vec3.transformMat4(this.origin, this.origin, matrix); //No need for position
+                                //Extract mat3 (rotation)
+                                mat3.fromMat4(g_poseMat, pose.transform.matrix);
+                                vec3.transformMat3(g_lookDir, g_lookDir, g_poseMat);
+                                //DALMAN: We're rotating a unit-vector so  we shouldn't really need to normalize...
+
+                                //textInfoElement.innerHTML = "POS: " + pose.transform.position.x + ", " + pose.transform.position.y + ", " + pose.transform.position.z;
+
+                                let boxPos = vec3.create();
+                                boxPos[0] = pose.transform.position.x + g_lookDir[0] * distance_m;
+                                boxPos[1] = pose.transform.position.y + g_lookDir[1] * distance_m;
+                                boxPos[2] = pose.transform.position.z + g_lookDir[2] * distance_m;
+                                
+                                let arObjMat = mat4.create();
+                                mat4.fromTranslation(arObjMat, boxPos);
+                                arObject2.matrix = arObjMat;
+
+                                arObject2.visible = true;
+                            }
+                            else {
+
+                                arObject2.visible = false;
+                            }
+
+                        }
+
+                        if (xrViewerSpaceHitTestSource) {
+                            let results = frame.getHitTestResults(xrViewerSpaceHitTestSource);
+
+                            // Use the results to place our proxy object.
+                            if (results.length) {
+                                let hitResult = results[0];
+                                arObject.visible = true;
+                                arObject.matrix = hitResult.getPose(xrRefSpace).transform.matrix;
+                            } else {
+                                arObject.visible = false; //ORIGINAL
+                                //arObject.visible = true;
+                            }
+
+                        } else {
+                            arObject.visible = false; //ORIGINAL
+                            //arObject.visible = true;
+                        }
+
+                        scene.startFrame(); //DALMAN
+                        scene.drawXRFrame(frame, pose); //DALMAN
+                        scene.endFrame(); //DALMAN
+                    }
+                } else {
+                    //textInfoElement.innerHTML = "Pose unavailable in the current frame!";
+                }
+            }
+
+            function calculateVerticesFromDepth(depthData, viewport) {
+                // This function calculates vertices data going from depth buffer
+                // coordinates into normalized view coordinates to then fetch the
+                // distance using the XRCPUDepthInformation.getDepthInMeters() helper.
+                // The normalized view coordinates are then converted to NDC in order
+                // to produce the vertices data.
+
+                const RESOLUTION = 5;
+
+                const depth_width = depthData.width;
+                const depth_height = depthData.height;
+
+                const X_RANGE = depth_width;
+                const Y_RANGE = depth_height;
+
+                const vertices_data = [];
+
+                const norm_depth_from_norm_view = depthData.normDepthBufferFromNormView.matrix;
+                const norm_view_from_norm_depth = mat4.invert(mat4.create(), norm_depth_from_norm_view);
+
+                const inverse_depth_dimensions = vec3.fromValues(1.0 / depth_width,
+                    1.0 / depth_height,
+                    0);
+
+                for (let x = 0; x < X_RANGE; x = x + RESOLUTION) {
+                    for (let y = 0; y < Y_RANGE; y = y + RESOLUTION) {
+
+                        // We start with absolute depth buffer coordinates:
+                        const depth_coords_depth_buffer = vec3.fromValues(x, y, 0);
+
+                        // Normalize them by depth buffer dimensions:
+                        const depth_cooords_norm_depth_buffer = scaleByVec(vec3.create(),
+                            depth_coords_depth_buffer,
+                            inverse_depth_dimensions);
+
+                        // Transform to normalized view coordinates:
+                        const depth_coords_view_norm = vec3.transformMat4(vec3.create(),
+                            depth_cooords_norm_depth_buffer,
+                            norm_view_from_norm_depth);
+
+                        if (depth_coords_view_norm[0] < 0 || depth_coords_view_norm[0] > 1 ||
+                            depth_coords_view_norm[1] < 0 || depth_coords_view_norm[1] > 1) {
+                            continue;
+                        }
+
+                        // getDepthInMeters() accepts inputs in normalized view coordinate system
+                        // that has origin in top left corner, X's grow to the right, and Y's grow
+                        // downward.
+                        const distance = depthData.getDepthInMeters(depth_coords_view_norm[0],
+                            depth_coords_view_norm[1]);
+
+                        // We need to convert normalized view coordinates to normalized device coordinates,
+                        // with the origin at the center of a cube with side length = 2 and Y growing upward.
+                        const depth_coords_ndc = vec3.clone(depth_coords_view_norm);
+
+                        // First, fix up the Y axis:
+                        depth_coords_ndc[1] = 1 - depth_coords_ndc[1];
+
+                        // Then, convert to range [-1, 1]:
+                        depth_coords_ndc[0] = (2.0 * depth_coords_ndc[0]) - 1;
+                        depth_coords_ndc[1] = (2.0 * depth_coords_ndc[1]) - 1;
+
+                        if (depth_coords_ndc[0] > 1 || depth_coords_ndc[0] < -1 ||
+                            depth_coords_ndc[1] > 1 || depth_coords_ndc[1] < -1) {
+                            continue;
+                        }
+
+                        vertices_data.push(depth_coords_ndc[0], depth_coords_ndc[1], distance);
+                    }
+                }
+
+                return vertices_data;
+            }
+
+            function calculateVerticesFromViewCoordinates(depthData, viewport) {
+                // This function calculates vertices data going directly from normalized
+                // view coordinates & using the XRCPUDepthInformation.getDepthInMeters()
+                // helper. Normalized view coordinates are then converted to NDC.
+
+                const smaller_dim = Math.min(viewport.width, viewport.height);
+                const larger_dim = Math.max(viewport.width, viewport.height);
+                const is_portrait = smaller_dim == viewport.width;
+
+                const larger_dim_resolution = (smaller_dim * 0.1) / larger_dim;
+
+                const X_RESOLUTION = is_portrait ? 0.1 : larger_dim_resolution;
+                const Y_RESOLUTION = is_portrait ? larger_dim_resolution : 0.1;
+
+                const X_RANGE = 1.0;
+                const Y_RANGE = 1.0;
+
+                const vertices_data = [];
+
+                for (let x = 0; x <= X_RANGE; x += X_RESOLUTION) {
+                    for (let y = 0; y <= Y_RANGE; y += Y_RESOLUTION) {
+                        const distance = depthData.getDepthInMeters(x, y);
+
+                        // We need to convert normalized view coordinates to normalized device coordinates,
+                        // with the origin at the center of a cube with side length = 2 and Y growing upward.
+                        const depth_coords_ndc = vec3.fromValues(x, y, 0.0);
+
+                        // First, fix up the Y axis:
+                        depth_coords_ndc[1] = 1 - depth_coords_ndc[1];
+
+                        // Then, convert to range [-1, 1]:
+                        depth_coords_ndc[0] = (2.0 * depth_coords_ndc[0]) - 1;
+                        depth_coords_ndc[1] = (2.0 * depth_coords_ndc[1]) - 1;
+
+                        if (depth_coords_ndc[0] > 1 || depth_coords_ndc[0] < -1 ||
+                            depth_coords_ndc[1] > 1 || depth_coords_ndc[1] < -1) {
+                            continue;
+                        }
+
+                        vertices_data.push(depth_coords_ndc[0], depth_coords_ndc[1], distance);
+                    }
+                }
+
+                return vertices_data;
+            }
+
+            function calculateVerticesFromViewCoordinatesSupersampled(depthData, viewport) {
+                // For verification only.
+
+                const smaller_depth_dim = Math.min(depthData.width, depthData.height);
+                const larger_depth_dim = Math.max(depthData.width, depthData.height);
+
+                const X_RANGE = 0.1;
+                const Y_RANGE = 0.1;
+
+                const NUM_SAMPLES_X = Math.trunc(4 * smaller_depth_dim);
+                const NUM_SAMPLES_Y = Math.trunc(4 * larger_depth_dim);
+
+                const vertices_data = [];
+
+                for (let x = 0; x <= X_RANGE; x += 1 / NUM_SAMPLES_X) {
+                    for (let y = 0; y <= X_RANGE; y += 1 / NUM_SAMPLES_Y) {
+                        const distance = depthData.getDepthInMeters(x, y);
+
+                        // We need to convert normalized view coordinates to normalized device coordinates,
+                        // with the origin at the center of a cube with side length = 2 and Y growing upward.
+                        const depth_coords_ndc = vec3.fromValues(x, y, 0.0);
+
+                        // First, fix up the Y axis:
+                        depth_coords_ndc[1] = 1 - depth_coords_ndc[1];
+
+                        // Then, convert to range [-1, 1]:
+                        depth_coords_ndc[0] = (2.0 * depth_coords_ndc[0]) - 1;
+                        depth_coords_ndc[1] = (2.0 * depth_coords_ndc[1]) - 1;
+
+                        if (depth_coords_ndc[0] > 1 || depth_coords_ndc[0] < -1 ||
+                            depth_coords_ndc[1] > 1 || depth_coords_ndc[1] < -1) {
+                            continue;
+                        }
+
+                        vertices_data.push(depth_coords_ndc[0], depth_coords_ndc[1], distance);
+                    }
+                }
+
+                return vertices_data;
+            }
+
+            function renderDepthInformationCPU(depthData, view, viewport) {
+                const vertices_data = calculateVerticesFromViewCoordinates(depthData, viewport);
+
+                //vertices_data contains screen-space (2D) pos + depth from camera??
+
+                gl.useProgram(programInfo.program);
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices_data), gl.DYNAMIC_DRAW);
+
+                gl.vertexAttribPointer(
+                    programInfo.attribLocations.vertexPosition,
+                    2,      // 2 components
+                    gl.FLOAT,
+                    false,  // don't normalize
+                    12,     // stride = 3 floats * 4 bytes
+                    0       // start at offset 0 of the buffer
+                );
+                gl.enableVertexAttribArray(
+                    programInfo.attribLocations.vertexPosition
+                );
+
+                gl.vertexAttribPointer(
+                    programInfo.attribLocations.depthDistance,
+                    1,      // 1 component
+                    gl.FLOAT,
+                    false,  // don't normalize
+                    12,     // stride = 3 floats * 4 bytes
+                    8       // start at offset of 2 floats * 4 bytes of the buffer
+                );
+                gl.enableVertexAttribArray(
+                    programInfo.attribLocations.depthDistance
+                );
+
+                gl.uniform1f(programInfo.uniformLocations.pointSize,
+                    15.0);
+
+                gl.uniform1f(programInfo.uniformLocations.alpha,
+                    0.9);
+
+                gl.drawArrays(gl.POINTS, 0, vertices_data.length / 3);
+            }
+
+            // Start the XR application.
+            initXR();
+        </script>
+    </body>
+    </html>
