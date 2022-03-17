@@ -45,7 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 <body>
     <header>
         <details open>
-            <summary>V07 (local): AR image detect</summary>
+            <summary>V08 (online): AR image detect</summary>
             <p>
                 This sample demonstrates use of image detection module to place AR objects on real-world surfaces.
                 NOTE: Navigate to chrome://flags and enable webxr-incubations
@@ -182,10 +182,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             let vertsDbg = [];
             let indicesDbg = [];
 
-            //Beam size
-            let L = 3.5 * 0.5; //In local x-dir
-            let H = 0.22 * 0.5; //In local y-dir
-            let W = 0.115; //In local z-dir (extrude in negative z-dir, 0 -> -0.115)
+            //Beam size (hemma):
+            //let L = 3.5 * 0.5; //In local x-dir
+            //let H = 0.22 * 0.5; //In local y-dir
+            //let W = 0.115; //In local z-dir (extrude in negative z-dir, 0 -> -0.115)
+            //Beam size (Chalmers):
+            let L = 3.0 * 0.5; //In local x-dir
+            let H = 0.25 * 0.5; //In local y-dir
+            let W = 0.2; //In local z-dir (extrude in negative z-dir, 0 -> -0.2)
 
             //Build from lower-left, lower-right, upper-right, upper-left
             vertsDbg.push(-L, -H, 0.0); //0
