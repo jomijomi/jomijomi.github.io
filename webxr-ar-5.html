@@ -1,0 +1,1308 @@
+﻿<!doctype html>
+<!--
+Copyright XXXX The Azax Corporation
+
+-->
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Hello WebXR!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        #text-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: large;
+            color: red;
+        }
+
+        .button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        .slidecontainer {
+            width: 100%; /* Width of the outside container */
+        }
+
+        /* The slider itself */
+        .slider {
+            -webkit-appearance: none; /* Override default CSS styles */
+            position: absolute;
+            width: 90%; /* Full-width */
+            top: 75%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            height: 15px; /* Specified height */
+            background: #d3d3d3; /* Grey background */
+            outline: none; /* Remove outline */
+            opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+            -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+            transition: opacity .2s;
+        }
+
+            /* Mouse-over effects */
+            .slider:hover {
+                opacity: 1; /* Fully shown on mouse-over */
+            }
+
+            /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+            .slider::-webkit-slider-thumb {
+                -webkit-appearance: none; /* Override default look */
+                width: 35px; /* Set a specific slider handle width */
+                height: 35px; /* Slider handle height */
+                background: #04AA6D; /* Green background */
+                cursor: pointer; /* Cursor on hover */
+            }
+
+        .btn {
+            background-color: DodgerBlue;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+            
+
+            .btn:active {
+                background-color: #ffbf00;
+            }
+    </style>
+
+    <!-- three.js -->
+    <!--<script src="https://unpkg.com/three@0.126.0/build/three.js"></script>-->
+    <script src="./js/three/three.min.js"></script>
+    <script src="./js/gl-matrix/gl-matrix-min.js"></script>
+    <script src="./jsm/math/Lut.js"></script>
+    <!-- <script src="./js/third-party/gl-matrix/src/gl-matrix.js"></script> -->
+</head>
+<body>
+    <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
+    <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
+    <p><b>NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
+    <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
+    <!-- Starting an immersive WebXR session requires user interaction.
+        We start this one with a simple button. -->
+    <!-- <button onclick="activateXR()">Start Hello WebXR</button> -->
+    <button class="button" onclick="activateXR()">Start AR</button>
+    <div id="text-overlay">
+        <div id="text-info"></div>
+        <!-- <button id="ar_button" class="button" style='display: none;' onclick="overlayButtonClick()">AR Overlay BTN</button> -->
+        <button id="chart_button" class="btn" style='display: none;'><i class="fa fa-line-chart"></i></button>
+        <button id="strains_button" class="btn" style='display: none;'><i class="fa fa-expand"></i> Strains</button>
+        <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-bolt"></i> Cracks</button>
+        <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-sort-amount-asc"></i> Deformations</button>
+        <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'>
+    </div>
+    <script>
+
+        /*
+        import { vec3 } from './js/render/math/gl-matrix.js';
+        //import { mat3 } from './js/render/math/gl-matrix.js';
+        import { mat4 } from './js/render/math/gl-matrix.js';
+        */
+
+        function clamp(value, min, max) {
+
+            return Math.max(min, Math.min(max, value));
+
+        }
+
+        class Lut {
+
+            constructor(colormap, count = 32) {
+
+                this.isLut = true;
+
+                this.lut = [];
+                this.map = [];
+                this.n = 0;
+                this.minV = 0;
+                this.maxV = 1;
+
+                this.setColorMap(colormap, count);
+
+            }
+
+            set(value) {
+
+                if (value.isLut === true) {
+
+                    this.copy(value);
+
+                }
+
+                return this;
+
+            }
+
+            setMin(min) {
+
+                this.minV = min;
+
+                return this;
+
+            }
+
+            setMax(max) {
+
+                this.maxV = max;
+
+                return this;
+
+            }
+
+            setColorMap(colormap, count = 32) {
+
+                this.map = ColorMapKeywords[colormap] || ColorMapKeywords.rainbow;
+                this.n = count;
+
+                const step = 1.0 / this.n;
+                const minColor = new THREE.Color();
+                const maxColor = new THREE.Color();
+
+                this.lut.length = 0;
+
+                // sample at 0
+
+                this.lut.push(new THREE.Color(this.map[0][1]));
+
+                // sample at 1/n, ..., (n-1)/n
+
+                for (let i = 1; i < count; i++) {
+
+                    const alpha = i * step;
+
+                    for (let j = 0; j < this.map.length - 1; j++) {
+
+                        if (alpha > this.map[j][0] && alpha <= this.map[j + 1][0]) {
+
+                            const min = this.map[j][0];
+                            const max = this.map[j + 1][0];
+
+                            minColor.set(this.map[j][1]);
+                            maxColor.set(this.map[j + 1][1]);
+
+                            const color = new THREE.Color().lerpColors(minColor, maxColor, (alpha - min) / (max - min));
+
+                            this.lut.push(color);
+
+                        }
+
+                    }
+
+                }
+
+                // sample at 1
+
+                this.lut.push(new THREE.Color(this.map[this.map.length - 1][1]));
+
+                return this;
+
+            }
+
+            copy(lut) {
+
+                this.lut = lut.lut;
+                this.map = lut.map;
+                this.n = lut.n;
+                this.minV = lut.minV;
+                this.maxV = lut.maxV;
+
+                return this;
+
+            }
+
+            getColor(alpha) {
+
+                //alpha = MathUtils.clamp(alpha, this.minV, this.maxV);
+                alpha = clamp(alpha, this.minV, this.maxV);
+
+                alpha = (alpha - this.minV) / (this.maxV - this.minV);
+
+                const colorPosition = Math.round(alpha * this.n);
+
+                return this.lut[colorPosition];
+
+            }
+
+            addColorMap(name, arrayOfColors) {
+
+                ColorMapKeywords[name] = arrayOfColors;
+
+                return this;
+
+            }
+
+            createCanvas() {
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = this.n;
+
+                this.updateCanvas(canvas);
+
+                return canvas;
+
+            }
+
+            updateCanvas(canvas) {
+
+                const ctx = canvas.getContext('2d', { alpha: false });
+
+                const imageData = ctx.getImageData(0, 0, 1, this.n);
+
+                const data = imageData.data;
+
+                let k = 0;
+
+                const step = 1.0 / this.n;
+
+                const minColor = new THREE.Color();
+                const maxColor = new THREE.Color();
+                const finalColor = new THREE.Color();
+
+                for (let i = 1; i >= 0; i -= step) {
+
+                    for (let j = this.map.length - 1; j >= 0; j--) {
+
+                        if (i < this.map[j][0] && i >= this.map[j - 1][0]) {
+
+                            const min = this.map[j - 1][0];
+                            const max = this.map[j][0];
+
+                            minColor.set(this.map[j - 1][1]);
+                            maxColor.set(this.map[j][1]);
+
+                            finalColor.lerpColors(minColor, maxColor, (i - min) / (max - min));
+
+                            data[k * 4] = Math.round(finalColor.r * 255);
+                            data[k * 4 + 1] = Math.round(finalColor.g * 255);
+                            data[k * 4 + 2] = Math.round(finalColor.b * 255);
+                            data[k * 4 + 3] = 255;
+
+                            k += 1;
+
+                        }
+
+                    }
+
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                return canvas;
+
+            }
+
+        }
+
+        const ColorMapKeywords = {
+
+            'rainbow': [[0.0, 0x0000FF], [0.2, 0x00FFFF], [0.5, 0x00FF00], [0.8, 0xFFFF00], [1.0, 0xFF0000]],
+            'cooltowarm': [[0.0, 0x3C4EC2], [0.2, 0x9BBCFF], [0.5, 0xDCDCDC], [0.8, 0xF6A385], [1.0, 0xB40426]],
+            'blackbody': [[0.0, 0x000000], [0.2, 0x780000], [0.5, 0xE63200], [0.8, 0xFFFF00], [1.0, 0xFFFFFF]],
+            'grayscale': [[0.0, 0x000000], [0.2, 0x404040], [0.5, 0x7F7F80], [0.8, 0xBFBFBF], [1.0, 0xFFFFFF]]
+
+        };
+
+        const textOverlayElement = document.querySelector("#text-overlay");
+        const textInfoElement = document.querySelector("#text-info");
+
+        let tapCounter = 0;
+
+        let tapToSnapLine = true;
+        let updateLineEndpoint = false;
+
+        let useAnchors = true; //DALMAN
+        let createAnchors = true; //DALMAN
+
+        let contourMesh = null;
+        let lut = null;
+
+        let currentSensorIdx = 22;
+
+        let guiMode = 0;
+        let activeChart = 0;
+
+        let theSlider = null;
+        let theStrainsButton = null;
+        let theCracksButton = null;
+        let theDefsButton = null;
+
+        async function activateXR() {
+
+            //Display AR button
+            //let buttton_element = document.getElementById("ar_button");
+            //buttton_element.style.display = 'inline-block';
+
+            var theSlider = document.getElementById("ar_slider");
+
+            theSlider.oninput = function () {
+                //output.innerHTML = this.value + Math.floor(Math.random() * 10);
+                currentSensorIdx = this.value;
+                updateColors();
+                //render();
+            }
+
+            theStrainsButton = document.getElementById("strains_button");
+            theCracksButton = document.getElementById("cracks_button");
+            theDefsButton = document.getElementById("defs_button");
+
+            var theChartButton = document.getElementById("chart_button");
+            theChartButton.style.display = 'inline-block';
+
+            theStrainsButton.onclick = function () {
+                if (activeChart == 1) {
+                    //We ARE active, toggle buttons OFF and HIDE slider
+                    theStrainsButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    activeChart = 0;
+                    contourMesh.visible = false;
+                } else {
+                    //Activate and SHOW slider
+                    theStrainsButton.style.backgroundColor = '#ffbf00';
+                    theCracksButton.style.backgroundColor = 'DodgerBlue';
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'inline-block';
+                    activeChart = 1;
+                    contourMesh.visible = true;
+                }
+
+                updateColors();
+                //render();
+            }
+
+            theCracksButton.onclick = function () {
+                if (activeChart == 2) {
+                    //We ARE active, toggle buttons OFF
+                    theCracksButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    activeChart = 0;
+                    contourMesh.visible = false;
+                } else {
+                    theCracksButton.style.backgroundColor = '#ffbf00';
+                    theStrainsButton.style.backgroundColor = 'DodgerBlue';
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'inline-block';
+                    activeChart = 2;
+                    contourMesh.visible = true;
+                }
+
+                updateColors();
+                //render();
+            }
+
+            theDefsButton.onclick = function () {
+                if (activeChart == 3) {
+                    //We ARE active, toggle buttons OFF
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    activeChart = 0;
+                    contourMesh.visible = false;
+                } else {
+                    theDefsButton.style.backgroundColor = '#ffbf00';
+                    theCracksButton.style.backgroundColor = 'DodgerBlue';
+                    theStrainsButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'inline-block';
+                    activeChart = 3;
+                    contourMesh.visible = true;
+                }
+
+                updateColors();
+                //render();
+            }
+
+            theChartButton.onclick = function () {
+                if (guiMode == 1) {
+                    //We ARE active, toggle buttons OFF
+                    //theChartButton.style.backgroundColor = 'DodgerBlue';
+                    theStrainsButton.style.display = 'none';
+                    theCracksButton.style.display = 'none';
+                    theDefsButton.style.display = 'none';
+                    theSlider.style.display = 'none';
+                    guiMode = 0;
+                } else {
+                    //theChartButton.style.backgroundColor = '#ffbf00';
+                    if (activeChart != 0)
+                        theSlider.style.display = 'inline-block';
+
+                    theStrainsButton.style.display = 'inline-block';
+                    theCracksButton.style.display = 'inline-block';
+                    theDefsButton.style.display = 'inline-block';
+                    guiMode = 1;
+                }
+
+            }
+
+
+            //The images we will detect/track
+            const img_01 = document.getElementById('imgQR01');
+            const imgBitmap_01 = await createImageBitmap(img_01);
+
+            const img_02 = document.getElementById('imgQR02');
+            const imgBitmap_02 = await createImageBitmap(img_02);
+
+
+            // Add a canvas element and initialize a WebGL context that is compatible with WebXR.
+            const canvas = document.createElement("canvas");
+            document.body.appendChild(canvas);
+            const gl = canvas.getContext("webgl", { xrCompatible: true });
+
+            //The Three.js Scene
+            const scene = new THREE.Scene();
+
+            lut = new Lut('rainbow');
+
+            /*
+            // The cube will have a different color on each side.
+            const materials = [
+                new THREE.MeshBasicMaterial({ color: 0xff0000 }),
+                new THREE.MeshBasicMaterial({ color: 0x0000ff }),
+                new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+                new THREE.MeshBasicMaterial({ color: 0xff00ff }),
+                new THREE.MeshBasicMaterial({ color: 0x00ffff }),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            ];
+
+            // Create the cube and add it to the demo scene.
+            const cube = new THREE.Mesh(new THREE.BoxBufferGeometry(0.2, 0.2, 0.2), materials);
+            cube.position.set(0.5, 0.5, 0.5);
+            scene.add(cube);
+            */
+
+
+            //Test gl-matrix
+
+            let dbgVec = glMatrix.vec3.create(); //Initialized to [0,0,0]
+            dbgVec[0] = 5.0;
+            dbgVec[1] = 6.0;
+            dbgVec[2] = 7.0;
+
+            //END - Test gl-matrix
+
+
+            //Some lines - BEGIN
+
+            //NOTE: positive Y points UP in three.js
+
+            const line_material_X = new THREE.LineBasicMaterial({
+                color: 0xff0000 //RED
+            });
+
+            const line_points_X = [];
+            line_points_X.push(new THREE.Vector3(0, 0, 0));
+            line_points_X.push(new THREE.Vector3(0.05, 0, 0));
+
+            const line_geometry_X = new THREE.BufferGeometry().setFromPoints(line_points_X);
+
+            const line_X = new THREE.Line(line_geometry_X, line_material_X);
+            scene.add(line_X);
+
+            //...and positive Y and Z
+            scene.add(createLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.05, 0), new THREE.LineBasicMaterial({ color: 0x00ff00 })))
+            scene.add(createLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0.05), new THREE.LineBasicMaterial({ color: 0x0000ff })))
+
+            //Some lines - END
+
+            let _wireframeBeamGroup = new THREE.Group();
+            //A wireframe beam:
+            let _wireframeBeam = null;
+            //Beam size (hemma):
+            //let L = 3.5 * 0.5; //In local x-dir
+            //let H = 0.22 * 0.5; //In local y-dir
+            //let W = 0.115; //In local z-dir (extrude in negative z-dir, 0 -> -0.115)
+            //Beam size (Chalmers):
+            let L = 3.0 * 0.5; //In local x-dir
+            let H = 0.25 * 0.5; //In local y-dir
+            let W = 0.2; //In local z-dir (extrude in negative z-dir, 0 -> -0.2)
+
+            _wireframeBeam = createWireframeBeam(L, H, W);
+            var pos_mat = new THREE.Matrix4();
+
+            //pos_mat.setPosition(new THREE.Vector3((Math.random() - 0.5) * 2.0, (Math.random() - 0.5) * 2.0, (Math.random() - 0.5) * 2.0));
+            pos_mat.setPosition(new THREE.Vector3(0, 0.0, 0.0));
+            _wireframeBeamGroup.matrix = pos_mat;
+            _wireframeBeamGroup.matrixAutoUpdate = false; //When we EXPLICITY set the matrix, we use this one!
+
+            _wireframeBeamGroup.add(_wireframeBeam);
+
+            contourMesh = new THREE.Mesh(undefined, new THREE.MeshLambertMaterial({
+                side: THREE.DoubleSide,
+                color: 0xF5F5F5,
+                vertexColors: true
+            }));
+
+            loadModel();
+
+            contourMesh.visible = false;
+            _wireframeBeamGroup.add(contourMesh);
+
+            scene.add(_wireframeBeamGroup);
+
+            const light = new THREE.AmbientLight(0xeeeeee);
+            scene.add(light);
+
+
+            //The "markers"
+            let arObjectImg = null;
+            let arObjectImg2 = null;
+
+            /*
+            arObjectImg = new THREE.Group();
+            arObjectImg.add(createLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.1, 0, 0), new THREE.LineBasicMaterial({ color: 0xff0000 })))
+            arObjectImg.add(createLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.1, 0), new THREE.LineBasicMaterial({ color: 0x00ff00 })))
+            arObjectImg.add(createLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0.1), new THREE.LineBasicMaterial({ color: 0x0000ff })))
+
+            arObjectImg.visible = false;
+            arObjectImg.matrixAutoUpdate = false;
+            scene.add(arObjectImg);
+            */
+
+            arObjectImg = new THREE.Group();
+            arObjectImg.add(createWireframeSquare(0.1, new THREE.LineBasicMaterial({ color: 0xff0000 })));
+            arObjectImg.visible = false;
+            arObjectImg.matrixAutoUpdate = false;
+            scene.add(arObjectImg);
+
+            /*
+            const arObjectImg_geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const arObjectImg_material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            arObjectImg = new THREE.Mesh(arObjectImg_geometry, arObjectImg_material);
+            arObjectImg.visible = false;
+            arObjectImg.matrixAutoUpdate = false;
+            scene.add(arObjectImg);
+            */
+
+            /*
+            const arObjectImg2_geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const arObjectImg2_material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            arObjectImg2 = new THREE.Mesh(arObjectImg2_geometry, arObjectImg2_material);
+            arObjectImg2.visible = false;
+            arObjectImg2.matrixAutoUpdate = false;
+            scene.add(arObjectImg2);
+            */
+
+            //TODO: See how we can share geometry, but have different materials
+            arObjectImg2 = new THREE.Group();
+            arObjectImg2.add(createWireframeSquare(0.1, new THREE.LineBasicMaterial({ color: 0x0000ff })));
+            arObjectImg2.visible = false;
+            arObjectImg2.matrixAutoUpdate = false;
+            scene.add(arObjectImg2);
+            //End - markers
+
+            //Other vars
+            //Image (I) and anchor (A) x-pos for P0
+            let newValueP0 = false;
+            let newValueP1 = false;
+            let updateCounter = 0;
+
+            let A_0_X = 0.0;
+            let A_0_Y = 0.0;
+            let A_0_Z = 0.0;
+
+            let A_1_X = 0.0;
+            let A_1_Y = 0.0;
+            let A_1_Z = 0.0;
+
+            let anchorP0 = null;
+            let anchorP1 = null;
+
+            // Set up the WebGLRenderer, which handles rendering to the session's base layer.
+            const renderer = new THREE.WebGLRenderer({
+                alpha: true,
+                preserveDrawingBuffer: true,
+                canvas: canvas,
+                context: gl
+            });
+            renderer.autoClear = false;
+
+            // The API directly updates the camera matrices.
+            // Disable matrix auto updates so three.js doesn't attempt
+            // to handle the matrices independently.
+            const camera = new THREE.PerspectiveCamera();
+            camera.matrixAutoUpdate = false;
+
+            let options = {
+                //requiredFeatures: ['local-floor', 'hit-test'],
+                requiredFeatures: ['local-floor', 'hit-test', 'image-tracking'],
+                trackedImages: [
+                    {
+                        image: imgBitmap_01, // tell webxr this is the image target we want to track
+                        widthInMeters: 0.1 // in meters what the size of the PRINTED image in the real world
+                    },
+                    {
+                        image: imgBitmap_02, // tell webxr this is the image target we want to track
+                        widthInMeters: 0.1 // in meters what the size of the PRINTED image in the real world
+                    }
+                ],
+                optionalFeatures: ['anchors']//,
+            };
+
+            //if (useDomOverlay.checked) {
+            options.optionalFeatures.push('dom-overlay');
+            //options.domOverlay = { root: document.body };
+            options.domOverlay = { root: textOverlayElement };
+            //}
+
+            // Initialize a WebXR session using "immersive-ar".
+            const session = await navigator.xr.requestSession("immersive-ar", options);
+            session.updateRenderState({
+                baseLayer: new XRWebGLLayer(session, gl)
+            });
+
+            // A 'local' reference space has a native origin that is located
+            // near the viewer's position at the time the session was created.
+            const referenceSpace = await session.requestReferenceSpace('local');
+
+            session.addEventListener('select', onSelect);
+
+
+
+            //textInfoElement.innerHTML = "This is text overlay!";
+
+            // Create a render loop that allows us to draw on the AR view.
+            const onXRFrame = (time, frame) => {
+                // Queue up the next draw request.
+                session.requestAnimationFrame(onXRFrame);
+
+                //DALMAN - IMAGE TRACKING BEGIN
+                if (frame) {
+                    const resultsImg = frame.getImageTrackingResults(); //checking if there are any images we track
+
+                    //if we have more than one image the results are an array
+                    for (const resultImg of resultsImg) {
+                        // The result's index is the image's position in the trackedImages array specified at session creation
+                        const imageIndex = resultImg.index;
+
+                        // Get the pose of the image relative to a reference space.
+                        //const referenceSpace = renderer.xr.getReferenceSpace();
+                        //const pose = frame.getPose(result.imageSpace, referenceSpace);
+                        const poseImg = frame.getPose(resultImg.imageSpace, referenceSpace);
+
+                        //checking the state of the tracking
+                        const state = resultImg.trackingState;
+
+                        if (state == "tracked") {
+                            if (imageIndex == 0) {
+                                arObjectImg.visible = true;
+                                arObjectImg.matrix.fromArray(poseImg.transform.matrix);
+
+                                if (updateLineEndpoint) {
+                                    if (useAnchors && createAnchors) {
+                                        //Create/update anchor
+                                        if (anchorP0) {
+                                            //Must delete old anchor (in order to update)
+                                            anchorP0.delete();
+                                            anchorP0 = null;
+                                        }
+
+                                        let pX = poseImg.transform.position.x;
+                                        let pY = poseImg.transform.position.y;
+                                        let pZ = poseImg.transform.position.z;
+
+                                        let oX = poseImg.transform.orientation.x;
+                                        let oY = poseImg.transform.orientation.y;
+                                        let oZ = poseImg.transform.orientation.z;
+                                        let oW = poseImg.transform.orientation.w;
+
+                                        //let xFormAnchor = new XRRigidTransform(poseImg.transform.position, poseImg.transform.orientation);
+                                        let xFormAnchor = new XRRigidTransform({ x: pX, y: pY, z: pZ, w: 1 }, { x: oX, y: oY, z: oZ, w: oW });
+
+                                        frame.createAnchor(xFormAnchor, referenceSpace).then((anchor) => {
+                                            // Do stuff with the anchor (assign objects that will be relative to this anchor)
+                                            anchor.context = {};
+                                            anchor.context.index = 0; //which index is this anchor for?
+                                            anchorP0 = anchor;
+
+                                        }, (error) => {
+                                            textInfoElement.innerHTML = "Could not create anchor 0!" + error;
+                                        });
+                                    }
+
+                                    updateLineEndpoint = false;
+                                }
+                            } else if (imageIndex == 1) {
+                                arObjectImg2.visible = true;
+                                arObjectImg2.matrix.fromArray(poseImg.transform.matrix);
+
+                                if (updateLineEndpoint) {
+                                    if (useAnchors && createAnchors) {
+                                        //Create/update anchor
+                                        if (anchorP1) {
+                                            //Must delete old anchor (in order to update)
+                                            anchorP1.delete();
+                                            anchorP1 = null;
+                                        }
+
+                                        let pX = poseImg.transform.position.x;
+                                        let pY = poseImg.transform.position.y;
+                                        let pZ = poseImg.transform.position.z;
+
+                                        let oX = poseImg.transform.orientation.x;
+                                        let oY = poseImg.transform.orientation.y;
+                                        let oZ = poseImg.transform.orientation.z;
+                                        let oW = poseImg.transform.orientation.w;
+
+                                        //let xFormAnchor = new XRRigidTransform(poseImg.transform.position, poseImg.transform.orientation);
+                                        let xFormAnchor = new XRRigidTransform({ x: pX, y: pY, z: pZ, w: 1 }, { x: oX, y: oY, z: oZ, w: oW });
+
+                                        frame.createAnchor(xFormAnchor, referenceSpace).then((anchor) => {
+                                            // Do stuff with the anchor (assign objects that will be relative to this anchor)
+                                            anchor.context = {};
+                                            anchor.context.index = 1; //which index is this anchor for?
+                                            anchorP1 = anchor;
+
+                                        }, (error) => {
+                                            textInfoElement.innerHTML = "Could not create anchor 1!" + error;
+                                        });
+                                    }
+
+                                    updateLineEndpoint = false;
+                                }
+
+
+                            }
+                        } else if (state == "emulated") {
+                            //target not seen, but position emulated
+                        } else {
+                            if (imageIndex == 0) {
+                                arObjectImg.visible = false;
+                            } else if (imageIndex == 1) {
+                                arObjectImg2.visible = false;
+                            }
+                        }
+                    }
+                }
+                //DALMAN - IMAGE TRACKING END
+
+                if (updateCounter > 40) {
+                    if (newValueP0 == true) {
+                        //xLine.setP0([I_0_X, I_0_Y, I_0_Z]);
+                        //xLine.setP0([A_0_X, A_0_Y, A_0_Z]);
+                        newValueP0 = false;
+                    }
+                    if (newValueP1 == true) {
+                        //xLine.setP1([I_1_X, I_1_Y, I_1_Z]);
+                        //xLine.setP1([A_1_X, A_1_Y, A_1_Z]);
+                        newValueP1 = false;
+                    }
+
+                    let Z_0_X = (A_0_X + A_1_X) * 0.5;
+                    let Z_0_Y = (A_0_Y + A_1_Y) * 0.5;
+                    let Z_0_Z = (A_0_Z + A_1_Z) * 0.5;
+
+                    //POSITIONING, NO ORIENTATION:
+
+                    let transVec = glMatrix.vec3.create(); //Initialized to [0,0,0]
+                    transVec[0] = Z_0_X;
+                    transVec[1] = Z_0_Y;
+                    transVec[2] = Z_0_Z;
+
+                    let transMat = glMatrix.mat4.translate(glMatrix.mat4.create(), glMatrix.mat4.create(), transVec);
+
+
+                    //ORIENTATION, NO POSITION
+                    //Create mat4 with coordinate frame!
+                    //Construct the coordinate frame:
+                    let LVX = glMatrix.vec3.fromValues(A_1_X - A_0_X, A_1_Y - A_0_Y, A_1_Z - A_0_Z);
+                    let LVX_N = glMatrix.vec3.normalize(glMatrix.vec3.create(), LVX);
+                    let LVY_N = glMatrix.vec3.fromValues(0.0, 1.0, 0.0); //normalized from the start!
+
+                    let LVZ = glMatrix.vec3.cross(glMatrix.vec3.create(), LVX_N, LVY_N);
+                    //let LVZ = vec3.cross(vec3.create(), LVY_N, LVX_N); //Reverse order..?
+                    let LVZ_N = glMatrix.vec3.normalize(glMatrix.vec3.create(), LVZ);
+                    //Now we have the coordinate frame, local XYZ
+                    let orientMat = glMatrix.mat4.create();
+
+                    //Per-row
+                    orientMat[0] = LVX_N[0]; //first row
+                    orientMat[1] = LVX_N[1]; //first row
+                    orientMat[2] = LVX_N[2]; //first row
+
+                    orientMat[4] = LVY_N[0]; //second row
+                    orientMat[5] = LVY_N[1]; //second row
+                    orientMat[6] = LVY_N[2]; //second row
+
+                    orientMat[8] = LVZ_N[0]; //third column, first row
+                    orientMat[9] = LVZ_N[1]; //third column, second row
+                    orientMat[10] = LVZ_N[2]; //third column, third row
+
+                    let finalMat = glMatrix.mat4.multiply(glMatrix.mat4.create(), transMat, orientMat);
+                    _wireframeBeamGroup.matrix.fromArray(finalMat);
+
+                    updateCounter = 0;
+                }
+
+                //textInfoElement.innerHTML = "I: " + I_0_X.toString() + "; A:" + A_0_X.toString();
+
+                if (useAnchors && ("trackedAnchors" in frame)) {
+                    const tracked_anchors = frame.trackedAnchors;
+                    if (tracked_anchors) {
+
+                        //all_previous_anchors.forEach(anchor => {
+                        //    if (!tracked_anchors.has(anchor)) {
+                        //        scene.removeNode(anchor.sceneObject);
+                        //    }
+                        //});
+
+                        //WHY DOESN'T THIS WORK!!!!!!!!!!!!!!!!?????????????????
+                        //let dbgTxt = "anchorPose: ";
+                        tracked_anchors.forEach(anchor => {
+                            const anchorPose = frame.getPose(anchor.anchorSpace, referenceSpace);
+                            if (anchorPose) {
+
+                                if (anchor.context.index == 0) {
+                                    A_0_X = anchorPose.transform.position.x;
+                                    A_0_Y = anchorPose.transform.position.y;
+                                    A_0_Z = anchorPose.transform.position.z;
+                                    newValueP0 = true;
+                                    //dbgTxt += " 0 ";
+                                    //dbgTxt += anchorPose.transform.position.x.toString();
+                                    //xLine.setP0([anchorPose.transform.position.x, anchorPose.transform.position.y, anchorPose.transform.position.z]);
+                                } else if (anchor.context.index == 1) {
+                                    A_1_X = anchorPose.transform.position.x;
+                                    A_1_Y = anchorPose.transform.position.y;
+                                    A_1_Z = anchorPose.transform.position.z;
+                                    newValueP1 = true;
+                                    //dbgTxt += " 1 ";
+                                    //xLine.setP1([anchorPose.transform.position.x, anchorPose.transform.position.y, anchorPose.transform.position.z]);
+                                } else {
+
+                                    //dbgTxt += " X ";
+                                }
+
+                                updateCounter += 1;
+                                //anchor.context.sceneObject.matrix = anchorPose.transform.matrix;
+                                //anchor.context.sceneObject.visible = true;
+
+                            } else {
+                                //anchor.context.sceneObject.visible = false;
+                                //textInfoElement.innerHTML = "We do NOT have anchorPose";
+                                //dbgTxt += " Z ";
+                            }
+                        });
+                        //dbgTxt += "\n";
+                        //dbgTxt += "Rad 2";
+                        //textInfoElement.innerHTML = dbgTxt;
+                        //all_previous_anchors = tracked_anchors;
+                    } else {
+                        //all_previous_anchors.forEach(anchor => {
+                        //    scene.removeNode(anchor.sceneObject);
+                        //});
+
+                        //all_previous_anchors = new Set();
+                    }
+                }
+
+                // Bind the graphics framebuffer to the baseLayer's framebuffer
+                gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer)
+
+                // Retrieve the pose of the device.
+                // XRFrame.getViewerPose can return null while the session attempts to establish tracking.
+                const pose = frame.getViewerPose(referenceSpace);
+                if (pose) {
+                    // In mobile AR, we only have one view.
+                    const view = pose.views[0];
+
+                    const viewport = session.renderState.baseLayer.getViewport(view);
+                    renderer.setSize(viewport.width, viewport.height)
+
+                    // Use the view's transform matrix and projection matrix to configure the THREE.camera.
+                    camera.matrix.fromArray(view.transform.matrix)
+                    camera.projectionMatrix.fromArray(view.projectionMatrix);
+                    camera.updateMatrixWorld(true);
+
+                    // Render the scene with THREE.WebGLRenderer.
+                    renderer.render(scene, camera)
+                }
+            }
+            session.requestAnimationFrame(onXRFrame);
+        }
+
+        //new THREE.Vector3(0, 0, 0)
+        //p1 and p2 are both THREE.Vector3
+        //c0 is THREE.Color
+        function createLine(p1, p2, c0) {
+            const line_points = [];
+            line_points.push(p1);
+            line_points.push(p2);
+
+            const line_geometry = new THREE.BufferGeometry().setFromPoints(line_points);
+            const the_line = new THREE.Line(line_geometry, c0);
+
+            return the_line;
+        }
+
+        //Y is positive UP, so create in XZ-plane
+        function createWireframeSquare(size, material) {
+            const geometry = new THREE.BufferGeometry();
+            //const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+            const vertices = [];
+            const indices = [];
+
+            let halfSize = size * 0.5;
+            let smallStep = size * 0.05;
+            let largerStep = size * 0.2;
+
+            let halfSize2 = halfSize + smallStep;
+
+            //Start with lower-left and go counter-clockwise
+
+            //Start with the inner square
+            vertices.push(-halfSize, 0.0, halfSize); //0
+            vertices.push(halfSize, 0.0, halfSize); //1
+            vertices.push(halfSize, 0.0, -halfSize); //2
+            vertices.push(-halfSize, 0.0, -halfSize); //3
+
+            indices.push(0);
+            indices.push(1);
+
+            indices.push(1);
+            indices.push(2);
+
+            indices.push(2);
+            indices.push(3);
+
+            indices.push(3);
+            indices.push(0);
+
+            //The outer stuff (lower left)
+            vertices.push(-halfSize2, 0.0, halfSize2 - largerStep); //4
+            vertices.push(-halfSize2, 0.0, halfSize2); //5
+            vertices.push(-halfSize2 + largerStep, 0.0, halfSize2); //6
+
+            indices.push(4);
+            indices.push(5);
+
+            indices.push(5);
+            indices.push(6);
+
+            //Lower right
+            vertices.push(halfSize2 - largerStep, 0.0, halfSize2); //7
+            vertices.push(halfSize2, 0.0, halfSize2); //8
+            vertices.push(halfSize2, 0.0, halfSize2 - largerStep); //9
+
+            indices.push(7);
+            indices.push(8);
+
+            indices.push(8);
+            indices.push(9);
+
+            //upper-right
+            vertices.push(halfSize2, 0.0, -halfSize2 + largerStep); //10
+            vertices.push(halfSize2, 0.0, -halfSize2); //11
+            vertices.push(halfSize2 - largerStep, 0.0, -halfSize2); //12
+
+            indices.push(10);
+            indices.push(11);
+
+            indices.push(11);
+            indices.push(12);
+
+            //upper-left
+            vertices.push(-halfSize2 + largerStep, 0.0, -halfSize2); //13
+            vertices.push(-halfSize2, 0.0, -halfSize2); //14
+            vertices.push(-halfSize2, 0.0, -halfSize2 + largerStep); //15
+
+            indices.push(13);
+            indices.push(14);
+
+            indices.push(14);
+            indices.push(15);
+
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+            const the_lines = new THREE.LineSegments(geometry, material);
+
+            return the_lines;
+        }
+
+        function loadModel() {
+
+            //console.log('loadModel - BEGIN');
+
+            const loader = new THREE.BufferGeometryLoader();
+            //loader.load( 'models/json/pressure.json', function ( geometry ) {
+            loader.load('models/json/sensitBeam4-contour.json', function (geometry) {
+
+
+                //First, update geometry
+                let arrayLength = geometry.attributes.position.array.length;
+                const positions = geometry.attributes.position.array;
+
+                let currentPos = 0;
+                for (let ii = 0, nn = geometry.attributes.position.count; ii < nn; ++ii) {
+
+                    let X = positions[currentPos];
+                    let Y = positions[currentPos + 1];
+                    let Z = positions[currentPos + 2];
+
+                    //Swap X and Z
+                    positions[currentPos] = Z;
+                    positions[currentPos + 2] = X;
+
+                    currentPos += 3;
+                }
+
+                geometry.attributes.position.needsUpdate = true;
+
+
+                geometry.computeBoundingBox();
+                //console.log('1: geometry.boundingBox: ', geometry.boundingBox);
+
+                geometry.center();
+                geometry.computeVertexNormals();
+
+                geometry.computeBoundingBox();
+                //console.log('2: geometry.boundingBox: ', geometry.boundingBox);
+
+                // default color attribute
+                const colors = [];
+
+                for (let i = 0, n = geometry.attributes.position.count; i < n; ++i) {
+
+                    //colors.push( 1, 1, 1 );
+                    colors.push(1, 0, 1);
+
+                }
+
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                contourMesh.geometry = geometry;
+                updateColors();
+
+                //render();
+
+            });
+
+            //console.log('loadModel - END');
+
+        }
+
+        function updateColors() {
+
+            const geometry = contourMesh.geometry;
+            const strains = geometry.userData.strains;
+            //const strains_0 = strains[0];
+            //const strains_0 = strains[40];
+
+            //console.log('geometry.attributes.position.count:', geometry.attributes.position.count); //geometry.attributes.position.count: 45000
+            //console.log('geometry.attributes.position.array.length:', geometry.attributes.position.array.length);
+
+            //console.log('strains.array.length:', strains.array.length);
+            //console.log('strains.length:', strains.length); //strains.length: 45
+            //console.log('strains_0.length:', strains_0.length); //strains_0.length: 45000
+
+            const cracks = geometry.userData.cracks;
+            const defs = geometry.userData.defs;
+            const time = geometry.userData.time;
+
+            //console.log('cracks.length:', cracks.length); //45
+            //console.log('defs.length:', defs.length); //45
+            //console.log('time.length:', time.length); //45
+
+
+            lut.setColorMap('rainbow');
+
+            //lut.setMax(2000);
+            //lut.setMin(0);
+
+            //lut.setMax(23);
+            //lut.setMin(-38);
+
+            //const geometry = mesh.geometry;
+            //const pressures = geometry.attributes.pressure;
+            //const pressures = strains[0]; //DALMAN
+            //const pressures = strains[10]; //DALMAN
+            //const pressures = strains[20]; //DALMAN
+            let pressures = null;
+            if (activeChart == 0) {
+                lut.setMax(10);
+                lut.setMin(0);
+
+                const colors0 = geometry.attributes.color;
+                for (let j = 0; j < strains[currentSensorIdx].length; j++) {
+                    colors0.setXYZ(j, 1, 0, 0.5);
+                }
+
+                colors0.needsUpdate = true;
+                return;
+
+            } else if (activeChart == 1) {
+                lut.setMax(1079);
+                lut.setMin(-814);
+
+                pressures = strains[currentSensorIdx];
+            } else if (activeChart == 2) {
+                lut.setMax(0.111);
+                lut.setMin(-0.051);
+
+                pressures = cracks[currentSensorIdx];
+            } else if (activeChart == 3) {
+                lut.setMax(3.561);
+                lut.setMin(-0.321);
+
+                pressures = defs[currentSensorIdx];
+            }
+            const colors = geometry.attributes.color;
+
+
+
+
+            //for ( let i = 0; i < pressures.array.length; i ++ ) {
+            for (let i = 0; i < pressures.length; i++) {
+
+                //const colorValue = pressures.array[ i ];
+                const colorValue = pressures[i];
+
+                const color = lut.getColor(colorValue);
+
+                if (color === undefined) {
+
+                    //console.log('Unable to determine color for value:', colorValue);
+
+                } else {
+
+                    colors.setXYZ(i, color.r, color.g, color.b);
+
+                }
+
+            }
+
+
+
+            //For strains_0:
+            //maxValue: 22
+            //minValue: -37
+
+            colors.needsUpdate = true;
+
+
+        }
+
+        ////Beam size
+        //let L = 3.5 * 0.5; //In local x-dir
+        //let H = 0.22 * 0.5; //In local y-dir
+        //let W = 0.115; //In local z-dir (extrude in negative z-dir, 0 -> -0.115)
+        function createWireframeBeam(L, H, W) {
+
+            const geometry = new THREE.BufferGeometry();
+            const material = new THREE.LineBasicMaterial({ color: 0x00ffff });
+
+            const vertices = [];
+            const indices = [];
+
+            //Build from lower-left, lower-right, upper-right, upper-left
+            vertices.push(-L, -H, 0.0); //0
+            vertices.push(L, -H, 0.0); //1
+            vertices.push(L, H, 0.0); //2
+            vertices.push(-L, H, 0.0); //3
+
+            vertices.push(-L, -H, -W); //4
+            vertices.push(L, -H, -W); //5
+            vertices.push(L, H, -W); //6
+            vertices.push(-L, H, -W); //7
+
+            //First rectangle
+            indices.push(0);
+            indices.push(1);
+
+            indices.push(1);
+            indices.push(2);
+
+            indices.push(2);
+            indices.push(3);
+
+            indices.push(3);
+            indices.push(0);
+
+            //Second rectangle
+            indices.push(4);
+            indices.push(5);
+
+            indices.push(5);
+            indices.push(6);
+
+            indices.push(6);
+            indices.push(7);
+
+            indices.push(7);
+            indices.push(4);
+
+            //Short sides
+            indices.push(0);
+            indices.push(4);
+
+            indices.push(3);
+            indices.push(7);
+
+            indices.push(1);
+            indices.push(5);
+
+            indices.push(2);
+            indices.push(6);
+
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+            const the_lines = new THREE.LineSegments(geometry, material);
+
+            return the_lines;
+
+        }
+
+        function overlayButtonClick() {
+            textInfoElement.innerHTML = "AR BTN Clicked!";
+        }
+
+        function onSelect(event) {
+
+            if (tapToSnapLine) {
+                updateLineEndpoint = true; //"activate" refine-anchor-position
+            }
+
+            /*
+            //textInfoElement.innerHTML = "onSelect";
+            if (tapCounter == 1) {
+                textInfoElement.innerHTML = "tapCounter is one (1)";
+            }
+            else if (tapCounter == 2) {
+                textInfoElement.innerHTML = "tapCounter is two (2)";
+            }
+            else if (tapCounter == 3) {
+                textInfoElement.innerHTML = "tapCounter is three (3)";
+            }
+            else if (tapCounter == 4) {
+                textInfoElement.innerHTML = "";
+                tapCounter = 0;
+            }*/
+
+            tapCounter += 1;
+        }
+
+    </script>
+</body>
+</html>
