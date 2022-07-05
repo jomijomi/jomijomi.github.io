@@ -38,6 +38,20 @@ Copyright XXXX The Azax Corporation
             cursor: pointer;
         }
 
+        #my-div-1 {
+            position: absolute;
+            top: 25%;
+            left: 2%;
+            width: 100%;
+        }
+
+        #my-div-2 {
+            position: absolute;
+            bottom: 5%;
+            left: 2%;
+            width: 100%;
+        }
+
         .slidecontainer {
             width: 100%; /* Width of the outside container */
         }
@@ -112,7 +126,11 @@ Copyright XXXX The Azax Corporation
         <button id="strains_button" class="btn" style='display: none;'><i class="fa fa-expand"></i> Strains</button>
         <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-bolt"></i> Cracks</button>
         <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-sort-amount-asc"></i> Deformations</button>
+        <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
         <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'>
+
+        <div id="my-div-1">1650</div>
+        <div id="my-div-2">-650</div>
     </div>
     <script>
 
@@ -471,8 +489,30 @@ Copyright XXXX The Azax Corporation
 
             //The Three.js Scene
             const scene = new THREE.Scene();
+            const uiScene = new THREE.Scene();
 
-            lut = new Lut('rainbow');
+            //lut = new Lut('rainbow');
+            lut = new Lut();
+            lut.addColorMap('jet', [[0.0, 0x00007F], [0.125, 0x0000FF], [0.25, 0x007FFF], [0.375, 0x00FFFF], [0.5, 0x7FFF7F], [0.625, 0xFFFF00], [0.75, 0xFF7F00], [0.875, 0xFF0000], [1.0, 0x7F0000]]);
+            lut.setColorMap('jet', 128);
+
+
+            let orthoCamera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 1, 2);
+            //orthoCamera.position.set(0.5, 0, 1); //Original example
+            //orthoCamera.position.set(0.1, 0, 1);
+            orthoCamera.position.set(0.95, 0, 1);
+
+            let sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(lut.createCanvas())
+            }));
+            //sprite.scale.x = 0.125;
+            sprite.scale.x = 0.04;
+
+            uiScene.add(sprite);
+
+            const map = sprite.material.map;
+            lut.updateCanvas(map.image);
+            map.needsUpdate = true;
 
             /*
             // The cube will have a different color on each side.
@@ -935,6 +975,9 @@ Copyright XXXX The Azax Corporation
 
                     // Render the scene with THREE.WebGLRenderer.
                     renderer.render(scene, camera)
+                    if (guiMode == 1 && activeChart != 0) {
+                        renderer.render(uiScene, orthoCamera);
+                    }
                 }
             }
             session.requestAnimationFrame(onXRFrame);
@@ -1046,6 +1089,8 @@ Copyright XXXX The Azax Corporation
 
             const loader = new THREE.BufferGeometryLoader();
             //loader.load( 'models/json/pressure.json', function ( geometry ) {
+            //loader.load('models/json/sensitBeam4-contour.json', function (geometry) {
+            //loader.load('models/json/AR_beam-contour.json', function (geometry) {
             loader.load('models/json/sensitBeam4-contour.json', function (geometry) {
 
 
@@ -1125,7 +1170,7 @@ Copyright XXXX The Azax Corporation
             //console.log('time.length:', time.length); //45
 
 
-            lut.setColorMap('rainbow');
+            //lut.setColorMap('rainbow');
 
             //lut.setMax(2000);
             //lut.setMin(0);
@@ -1155,15 +1200,29 @@ Copyright XXXX The Azax Corporation
                 lut.setMax(1079);
                 lut.setMin(-814);
 
+                //lut.setMax(1327);
+                //lut.setMin(-647);
+
                 pressures = strains[currentSensorIdx];
             } else if (activeChart == 2) {
                 lut.setMax(0.111);
-                lut.setMin(-0.051);
+                lut.setMin(0.0); //clamp
+
+                //lut.setMax(0.68);
+                //lut.setMin(0.0); //clamp
 
                 pressures = cracks[currentSensorIdx];
             } else if (activeChart == 3) {
-                lut.setMax(3.561);
-                lut.setMin(-0.321);
+                //lut.setMax(3.561);
+                //lut.setMin(-0.321);
+                //NEG:
+                lut.setMax(0.0); //clamp
+                lut.setMin(-3.561); //negate
+                
+
+                //As negative:
+                //lut.setMax(0.0); //clamp
+                //lut.setMin(-4.52); //negate
 
                 pressures = defs[currentSensorIdx];
             }
@@ -1176,7 +1235,13 @@ Copyright XXXX The Azax Corporation
             for (let i = 0; i < pressures.length; i++) {
 
                 //const colorValue = pressures.array[ i ];
-                const colorValue = pressures[i];
+                //const colorValue = pressures[i];
+                let colorValue = 0.0;
+                if (activeChart == 3) {
+                    colorValue = -pressures[i]; //negate deflection so its similar as the Matlab plots
+                } else {
+                    colorValue = pressures[i];
+                }
 
                 const color = lut.getColor(colorValue);
 
