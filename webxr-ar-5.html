@@ -52,6 +52,13 @@ Copyright XXXX The Azax Corporation
             width: 100%;
         }
 
+        #my-div-3 {
+            position: absolute;
+            bottom: 5%;
+            left: 40%;
+            width: 100%;
+        }
+
         .slidecontainer {
             width: 100%; /* Width of the outside container */
         }
@@ -127,10 +134,12 @@ Copyright XXXX The Azax Corporation
         <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-bolt"></i> Cracks</button>
         <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-sort-amount-asc"></i> Deformations</button>
         <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
-        <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'>
+        <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
+        <input type="range" min="0" max="51" value="22" class="slider" id="ar_slider" style='display: none;'>
 
-        <div id="my-div-1">1650</div>
-        <div id="my-div-2">-650</div>
+        <div id="my-div-1">1</div>
+        <div id="my-div-2">0</div>
+        <div id="my-div-3">D</div>
     </div>
     <script>
 
@@ -359,6 +368,7 @@ Copyright XXXX The Azax Corporation
         let lut = null;
 
         let currentSensorIdx = 22;
+        let date_time = ' ';
 
         let guiMode = 0;
         let activeChart = 0;
@@ -368,11 +378,24 @@ Copyright XXXX The Azax Corporation
         let theCracksButton = null;
         let theDefsButton = null;
 
+        let legendTextTop = null;
+        let legendTextBottom = null;
+        let legendTextDateTime = null;
+
         async function activateXR() {
 
             //Display AR button
             //let buttton_element = document.getElementById("ar_button");
             //buttton_element.style.display = 'inline-block';
+
+            legendTextTop = document.getElementById("my-div-1");
+            legendTextTop.innerText = ' ';
+
+            legendTextBottom = document.getElementById("my-div-2");
+            legendTextBottom.innerText = ' ';
+
+            legendTextDateTime = document.getElementById("my-div-3");
+            legendTextDateTime.innerText = ' ';
 
             var theSlider = document.getElementById("ar_slider");
 
@@ -380,6 +403,7 @@ Copyright XXXX The Azax Corporation
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
                 currentSensorIdx = this.value;
                 updateColors();
+                updateLegendText();
                 //render();
             }
 
@@ -406,8 +430,9 @@ Copyright XXXX The Azax Corporation
                     activeChart = 1;
                     contourMesh.visible = true;
                 }
-
+                
                 updateColors();
+                updateLegendText();
                 //render();
             }
 
@@ -426,8 +451,9 @@ Copyright XXXX The Azax Corporation
                     activeChart = 2;
                     contourMesh.visible = true;
                 }
-
+                
                 updateColors();
+                updateLegendText();
                 //render();
             }
 
@@ -446,8 +472,9 @@ Copyright XXXX The Azax Corporation
                     activeChart = 3;
                     contourMesh.visible = true;
                 }
-
+                
                 updateColors();
+                updateLegendText();
                 //render();
             }
 
@@ -470,6 +497,8 @@ Copyright XXXX The Azax Corporation
                     theDefsButton.style.display = 'inline-block';
                     guiMode = 1;
                 }
+
+                updateLegendText();
 
             }
 
@@ -500,7 +529,8 @@ Copyright XXXX The Azax Corporation
             let orthoCamera = new THREE.OrthographicCamera(- 1, 1, 1, - 1, 1, 2);
             //orthoCamera.position.set(0.5, 0, 1); //Original example
             //orthoCamera.position.set(0.1, 0, 1);
-            orthoCamera.position.set(0.95, 0, 1);
+            //orthoCamera.position.set(0.95, 0, 1);
+            orthoCamera.position.set(0.95, 0.17, 1);
 
             let sprite = new THREE.Sprite(new THREE.SpriteMaterial({
                 map: new THREE.CanvasTexture(lut.createCanvas())
@@ -1091,7 +1121,7 @@ Copyright XXXX The Azax Corporation
             //loader.load( 'models/json/pressure.json', function ( geometry ) {
             //loader.load('models/json/sensitBeam4-contour.json', function (geometry) {
             //loader.load('models/json/AR_beam-contour.json', function (geometry) {
-            loader.load('models/json/sensitBeam4-contour.json', function (geometry) {
+            loader.load('models/json/AR_beam-contour2.json', function (geometry) {
 
 
                 //First, update geometry
@@ -1147,6 +1177,32 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function updateLegendText() {
+
+            if (guiMode == 0) {
+                legendTextTop.innerText = ' ';
+                legendTextBottom.innerText = ' ';
+                legendTextDateTime.innerText = ' ';
+            } else if (activeChart == 0) {
+                legendTextTop.innerText = ' ';
+                legendTextBottom.innerText = ' ';
+                legendTextDateTime.innerText = ' ';
+            } else if (activeChart == 1) {
+                legendTextTop.innerText = '1327';
+                legendTextBottom.innerText = '-647';
+                legendTextDateTime.innerText = date_time;
+            } else if (activeChart == 2) {
+                legendTextTop.innerText = '0.68';
+                legendTextBottom.innerText = '0.0';
+                legendTextDateTime.innerText = date_time;
+            } else if (activeChart == 3) {
+                legendTextTop.innerText = '0.0';
+                legendTextBottom.innerText = '-4.52';
+                legendTextDateTime.innerText = date_time;
+            }
+
+        }
+
         function updateColors() {
 
             const geometry = contourMesh.geometry;
@@ -1197,39 +1253,39 @@ Copyright XXXX The Azax Corporation
                 return;
 
             } else if (activeChart == 1) {
-                lut.setMax(1079);
-                lut.setMin(-814);
+                //lut.setMax(1079);
+                //lut.setMin(-814);
 
-                //lut.setMax(1327);
-                //lut.setMin(-647);
+                lut.setMax(1327);
+                lut.setMin(-647);
 
                 pressures = strains[currentSensorIdx];
             } else if (activeChart == 2) {
-                lut.setMax(0.111);
-                lut.setMin(0.0); //clamp
-
-                //lut.setMax(0.68);
+                //lut.setMax(0.111);
                 //lut.setMin(0.0); //clamp
+
+                lut.setMax(0.68);
+                lut.setMin(0.0); //clamp
 
                 pressures = cracks[currentSensorIdx];
             } else if (activeChart == 3) {
                 //lut.setMax(3.561);
                 //lut.setMin(-0.321);
                 //NEG:
-                lut.setMax(0.0); //clamp
-                lut.setMin(-3.561); //negate
+                //lut.setMax(0.0); //clamp
+                //lut.setMin(-3.561); //negate
                 
 
                 //As negative:
-                //lut.setMax(0.0); //clamp
-                //lut.setMin(-4.52); //negate
+                lut.setMax(0.0); //clamp
+                lut.setMin(-4.52); //negate
 
                 pressures = defs[currentSensorIdx];
             }
             const colors = geometry.attributes.color;
 
 
-
+            date_time = time[currentSensorIdx];
 
             //for ( let i = 0; i < pressures.array.length; i ++ ) {
             for (let i = 0; i < pressures.length; i++) {
