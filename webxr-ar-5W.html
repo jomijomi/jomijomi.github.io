@@ -119,7 +119,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v4 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -491,7 +491,12 @@ Copyright XXXX The Azax Corporation
                     thePlayButton.style.backgroundColor = 'DodgerBlue';
                     isSimulating = false;
                     //Stop interval...
-                    window.clearInterval(theIntervalID);
+                    if (theIntervalID == 0) {
+                        //No id yet...
+                    }
+                    else {
+                        window.clearInterval(theIntervalID);
+                    }
                 } else {
                     thePlayButton.style.backgroundColor = '#ffbf00';
                     isSimulating = true;
@@ -1160,6 +1165,7 @@ Copyright XXXX The Azax Corporation
             updateUserData(geometry);
 
             updateColors();
+            updateLegendText();
 
         }
 
@@ -1250,11 +1256,11 @@ Copyright XXXX The Azax Corporation
             //EPS_MAX
             const eps_max = theGeometry.userData.eps_max;
             if (eps_max == null) {
-                console.log('eps_max is null!');
+                //console.log('eps_max is null!');
                 //return;
             }
             else {
-                console.log('eps_max.length:', eps_max.length);
+                //console.log('eps_max.length:', eps_max.length);
                 let randomVal = Math.random() * 1000.0; //If null, we replace with this
                 for (let i = 0; i < eps_max.length; i++) {
                     if (eps_max[i] == null)
@@ -1268,18 +1274,18 @@ Copyright XXXX The Azax Corporation
                 //mesh.geometry.userData = null; //"add" userData as property??
                 //mesh.geometry.userData.eps_max = eps_max;
 
-                console.log('mesh.geometry.userData.eps_max.length:', mesh.geometry.userData.eps_max.length);
+                //console.log('mesh.geometry.userData.eps_max.length:', contourMesh.geometry.userData.eps_max.length);
 
             }
 
             //EPS_MIN
             const eps_min = theGeometry.userData.eps_min;
             if (eps_min == null) {
-                console.log('eps_min is null!');
+                //console.log('eps_min is null!');
                 //return;
             }
             else {
-                console.log('eps_min.length:', eps_min.length);
+                //console.log('eps_min.length:', eps_min.length);
 
                 let randomVal = Math.random() * 1.0; //If null, we replace with this
                 for (let i = 0; i < eps_min.length; i++) {
@@ -1294,11 +1300,11 @@ Copyright XXXX The Azax Corporation
             //ETA_XY
             const eta_xy = theGeometry.userData.eta_xy;
             if (eta_xy == null) {
-                console.log('eta_xy is null!');
+                //console.log('eta_xy is null!');
                 //return;
             }
             else {
-                console.log('eta_xy.length:', eta_xy.length);
+                //console.log('eta_xy.length:', eta_xy.length);
 
                 let randomVal = Math.random() * 5.0; //If null, we replace with this
                 for (let i = 0; i < eta_xy.length; i++) {
