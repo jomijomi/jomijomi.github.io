@@ -119,7 +119,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -1262,7 +1262,7 @@ Copyright XXXX The Azax Corporation
                 }
 
                 //Can we really do like this..?
-                mesh.geometry.userData.eps_max = eps_max;
+                contourMesh.geometry.userData.eps_max = eps_max;
                 //
                 //or:
                 //mesh.geometry.userData = null; //"add" userData as property??
@@ -1288,7 +1288,7 @@ Copyright XXXX The Azax Corporation
                 }
 
                 //Can we really do like this..?
-                mesh.geometry.userData.eps_min = eps_min;
+                contourMesh.geometry.userData.eps_min = eps_min;
             }
 
             //ETA_XY
@@ -1307,7 +1307,7 @@ Copyright XXXX The Azax Corporation
                 }
 
                 //Can we really do like this..?
-                mesh.geometry.userData.eta_xy = eta_xy;
+                contourMesh.geometry.userData.eta_xy = eta_xy;
             }
 
 
