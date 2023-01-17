@@ -22,7 +22,7 @@
             }
 </style>
 <body>
-    <h2>WebSocket Test v4</h2>
+    <h2>WebSocket Test v6.7</h2>
     <textarea cols="60" rows="3"></textarea>
     <button>Send</button>
     <button id="close_socket_button">Close Socket</button>
@@ -43,9 +43,9 @@
     let saveCounter = 0;
 
     //const wsUri = "ws://127.0.0.1/";    
-    //const websocket = new WebSocket(wsUri);
-    //const websocket = null;
-    let websocket = null;
+    //const theWebsocket = new WebSocket(wsUri);
+    //const theWebsocket = null;
+    let theWebsocket = null;
 
     button.addEventListener("click", onClickButton);
 
@@ -96,7 +96,7 @@
 
     function doSend(message) {
         writeToScreen(`SENT: ${message}`);
-        websocket.send(message);
+        theWebsocket.send(message);
     }
 
     function writeToScreen(message) {
@@ -118,21 +118,21 @@
         console.log('onClickButton');
         const text = textarea.value;
         console.log(text);
-        websocket = new WebSocket(text);
+        theWebsocket = new WebSocket(text);
 
-        websocket.onopen = (e) => {
+        theWebsocket.onopen = (e) => {
 
             console.log('CONNECTED');
             writeToScreen("CONNECTED");
             //doSend("WebSocket rocks");
         };
 
-        websocket.onclose = (e) => {
+        theWebsocket.onclose = (e) => {
             console.log('DISCONNECTED');
             writeToScreen("DISCONNECTED");
         };
 
-        websocket.onmessage = (e) => {
+        theWebsocket.onmessage = (e) => {
             console.log('onmessage');
             //writeToScreen(`<span>RESPONSE: ${e.data}</span>`);
 
@@ -146,7 +146,7 @@
             console.log('after save');        
         };
 
-        websocket.onerror = (e) => {
+        theWebsocket.onerror = (e) => {
             console.log('onerror');
             console.log(e.data);
             writeToScreen(`<span class="error">ERROR:</span> ${e.data}`);
