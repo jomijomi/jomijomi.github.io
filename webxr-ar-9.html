@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - lookup table</title>
+    <title>three.js webgl - lookup table V6</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -791,8 +791,11 @@
             theWebsocket.onmessage = (e) => {
                 console.log('onmessage');
                 //writeToScreen(`<span>RESPONSE: ${e.data}</span>`);
-                let theDataAsJson = JSON.parse(e.data);
-                loadModelFromJSON(theDataAsJson)
+
+                //let theDataAsJson = JSON.parse(e.data);
+                //loadModelFromJSON(theDataAsJson)
+                
+                loadModelFromJSON(e.data)
             };
 
             theWebsocket.onerror = (e) => {
