@@ -25,6 +25,7 @@
     <h2>WebSocket Test v2</h2>
     <textarea cols="60" rows="3"></textarea>
     <button>Send</button>
+    <button id="close_socket_button">Close Socket</button>
     <div id="output"></div>
 </body>
 <script>
@@ -32,6 +33,8 @@
     const button = document.querySelector("button");
     const output = document.querySelector("#output");
     const textarea = document.querySelector("textarea");
+    const theCloseSocketButton = document.getElementById("close_socket_button");
+    theCloseSocketButton.addEventListener("click", onClickCloseSocketButton);
     //const wsUri = "ws://127.0.0.1/";    
     //const websocket = new WebSocket(wsUri);
     //const websocket = null;
@@ -68,6 +71,16 @@
         output.insertAdjacentHTML("afterbegin", `<p>${message}</p>`);
     }
 
+    function onClickCloseSocketButton() {
+        if (theWebsocket == null) {
+            console.log('cannot close non-open socket!');
+        }
+        else {
+            theWebsocket.close();
+            theWebsocket = null;
+        }
+    }
+
     function onClickButton() {
 
         console.log('onClickButton');
@@ -79,7 +92,7 @@
 
             console.log('CONNECTED');
             writeToScreen("CONNECTED");
-            doSend("WebSocket rocks");
+            //doSend("WebSocket rocks");
         };
 
         websocket.onclose = (e) => {
