@@ -281,10 +281,11 @@
                         //document.getElementById('output')
                          //   .textContent = fr.result;
 
-                        let theDataAsJson = JSON.parse(fr.result);
-                        loadModelFromJSON(theDataAsJson)
+                        //THIS WORKS!!
+                        //let theDataAsJson = JSON.parse(fr.result);
+                        //loadModelFromJSON(theDataAsJson)
 
-                        //loadModelFromJSON(fr.result)
+                        loadModelFromJSON(fr.result)
                     }
 
                     fr.readAsText(this.files[0]);
