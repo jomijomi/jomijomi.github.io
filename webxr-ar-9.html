@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V6.4</title>
+    <title>three.js webgl - V6.5</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -282,8 +282,8 @@
                          //   .textContent = fr.result;
 
                         //THIS WORKS!!
-                        let theDataAsJson = JSON.parse(fr.result);
-                        loadModelFromJSON(theDataAsJson)
+                        //let theDataAsJson = JSON.parse(fr.result);
+                        //loadModelFromJSON(theDataAsJson);
 
                         //THIS DOESN'T WORK
                         //let theDataAsJson1 = JSON.parse(fr.result);
@@ -819,9 +819,12 @@
                 //writeToScreen(`<span>RESPONSE: ${e.data}</span>`);
 
                 //let theDataAsJson = JSON.parse(e.data);
-                //loadModelFromJSON(theDataAsJson)
+                //loadModelFromJSON(theDataAsJson);
 
-                loadModelFromJSON(e.data)
+                let theDataAsJson = JSON.parse(`${e.data}`); //Who am I kidding :)
+                loadModelFromJSON(theDataAsJson);
+
+                //loadModelFromJSON(e.data)
             };
 
             theWebsocket.onerror = (e) => {
