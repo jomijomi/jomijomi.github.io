@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V6.7</title>
+    <title>three.js webgl - V6.8</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -519,6 +519,41 @@
 
         }
 
+        function loadUserDataFromJSON(theJsonObj) {
+
+            console.log('loadUserDataFromJSON - BEGIN');
+
+            if (json.userData) {
+                //ok
+            }
+            else {
+                return;
+            }
+
+
+            const geometry = new BufferGeometry();
+            geometry.userData = json.userData;
+
+            //if ( json.userData ) geometry.userData = json.userData;
+            //const geometry = new BufferGeometry();
+
+            //const loader = new THREE.BufferGeometryLoader();
+
+            //const geometry = loader.parse(theJsonObj);
+            //if (geometry == null)
+            //    return;
+
+            updateUserData(geometry);
+
+            updateColors();
+
+            render();
+
+            
+
+
+        }
+
         function loadModelFromJSON(theJsonObj) {
 
             console.log('loadModelFromJSON - BEGIN');
@@ -819,7 +854,8 @@
                 //writeToScreen(`<span>RESPONSE: ${e.data}</span>`);
 
                 let theDataAsJson = JSON.parse(e.data);
-                loadModelFromJSON(theDataAsJson);
+                //loadModelFromJSON(theDataAsJson);
+                loadUserDataFromJSON(theDataAsJson);
 
                 //let theDataAsJson = JSON.parse(`${e.data}`); //Who am I kidding :)
                 //loadModelFromJSON(theDataAsJson);
