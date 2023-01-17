@@ -26,6 +26,7 @@
     <textarea cols="60" rows="3"></textarea>
     <button>Send</button>
     <button id="close_socket_button">Close Socket</button>
+    <button id="save_test_button">Save test</button>
     <div id="output"></div>
 </body>
 <script>
@@ -35,6 +36,10 @@
     const textarea = document.querySelector("textarea");
     const theCloseSocketButton = document.getElementById("close_socket_button");
     theCloseSocketButton.addEventListener("click", onClickCloseSocketButton);
+
+    const theSaveTestButton = document.getElementById("save_test_button");
+    theSaveTestButton.addEventListener("click", onClickSaveTestButton);
+
     //const wsUri = "ws://127.0.0.1/";    
     //const websocket = new WebSocket(wsUri);
     //const websocket = null;
@@ -60,6 +65,26 @@
         writeToScreen(`<span class="error">ERROR:</span> ${e.data}`);
     };
     */
+
+    function download(filename, text) {
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+
+    function onClickSaveTestButton() {
+        console.log('before save');
+        download('test.txt', 'Hello world!');
+        console.log('after save');        
+    }
     
 
     function doSend(message) {
