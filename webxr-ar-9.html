@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - lookup table V6.3</title>
+    <title>three.js webgl - V6.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -282,12 +282,13 @@
                          //   .textContent = fr.result;
 
                         //THIS WORKS!!
-                        //let theDataAsJson = JSON.parse(fr.result);
-                        //loadModelFromJSON(theDataAsJson);
+                        let theDataAsJson = JSON.parse(fr.result);
+                        loadModelFromJSON(theDataAsJson)
 
-                        let theDataAsJson1 = JSON.parse(fr.result);
-                        let theDataAsJson2 = JSON.parse(theDataAsJson1);
-                        loadModelFromJSON(theDataAsJson2);
+                        //THIS DOESN'T WORK
+                        //let theDataAsJson1 = JSON.parse(fr.result);
+                        //let theDataAsJson2 = JSON.parse(theDataAsJson1);
+                        //loadModelFromJSON(theDataAsJson2);
 
                         //loadModelFromJSON(fr.result); //This doesn't work...
                     }
