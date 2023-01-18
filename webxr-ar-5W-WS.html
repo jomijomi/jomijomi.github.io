@@ -102,11 +102,21 @@ Copyright XXXX The Azax Corporation
             cursor: pointer;
         }
 
-            
+        .btn:active {
+            background-color: #ffbf00;
+        }
 
-            .btn:active {
-                background-color: #ffbf00;
-            }
+        .btn2 {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            background-color: DodgerBlue;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 
     <!-- three.js -->
@@ -130,10 +140,10 @@ Copyright XXXX The Azax Corporation
         <div id="text-info"></div>
         <!-- <button id="ar_button" class="button" style='display: none;' onclick="overlayButtonClick()">AR Overlay BTN</button> -->
         <button id="chart_button" class="btn" style='display: none;'><i class="fa fa-line-chart"></i></button>
-        <button id="strains_button" class="btn" style='display: none;'><i class="fa fa-expand"></i> Strains</button>
-        <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-bolt"></i> Cracks</button>
-        <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-sort-amount-asc"></i> Deformations</button>
-        <button id="play_button" class="btn" style='display: none;'><i class="fa fa-play"></i></button>
+        <button id="strains_button" class="btn" style='display: none;'><i class="fa fa-expand"></i> εmax</button>
+        <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-compress"></i> εmin</button>
+        <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-crop"></i> γxy</button>
+        <button id="play_button" class="btn" style='display: none;'><i class="fa fa-wifi"></i></button>
         <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
         <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
         <input type="range" min="0" max="51" value="22" class="slider" id="ar_slider" style='display: none;'>
@@ -141,6 +151,8 @@ Copyright XXXX The Azax Corporation
         <div id="my-div-1">1</div>
         <div id="my-div-2">0</div>
         <div id="my-div-3">D</div>
+
+        <button id="legend_sliders_button" class="btn2" style='display: none;'><i class="fa fa-sliders"></i></button>
     </div>
     <script>
 
@@ -385,6 +397,8 @@ Copyright XXXX The Azax Corporation
 
         let theWebsocket = null;
 
+        let theLegendSlidersButton = null;
+
         let legendTextTop = null;
         let legendTextBottom = null;
         let legendTextDateTime = null;
@@ -420,6 +434,8 @@ Copyright XXXX The Azax Corporation
 
             thePlayButton = document.getElementById("play_button");
 
+            theLegendSlidersButton = document.getElementById("legend_sliders_button");
+
             var theChartButton = document.getElementById("chart_button");
             theChartButton.style.display = 'inline-block';
 
@@ -428,6 +444,7 @@ Copyright XXXX The Azax Corporation
                     //We ARE active, toggle buttons OFF and HIDE slider
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.display = 'none';
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
@@ -436,6 +453,7 @@ Copyright XXXX The Azax Corporation
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
                     theDefsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'inline-block';
+                    theLegendSlidersButton.style.display = 'inline-block';
                     activeChart = 1;
                     contourMesh.visible = true;
                 }
@@ -450,6 +468,7 @@ Copyright XXXX The Azax Corporation
                     //We ARE active, toggle buttons OFF
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.display = 'none';
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
@@ -457,6 +476,7 @@ Copyright XXXX The Azax Corporation
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theDefsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'inline-block';
+                    theLegendSlidersButton.style.display = 'inline-block';
                     activeChart = 2;
                     contourMesh.visible = true;
                 }
@@ -471,6 +491,7 @@ Copyright XXXX The Azax Corporation
                     //We ARE active, toggle buttons OFF
                     theDefsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.display = 'none';
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
@@ -478,6 +499,7 @@ Copyright XXXX The Azax Corporation
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'inline-block';
+                    theLegendSlidersButton.style.display = 'inline-block';
                     activeChart = 3;
                     contourMesh.visible = true;
                 }
@@ -545,11 +567,14 @@ Copyright XXXX The Azax Corporation
                     theDefsButton.style.display = 'none';
                     thePlayButton.style.display = 'none';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.display = 'none';
                     guiMode = 0;
                 } else {
                     //theChartButton.style.backgroundColor = '#ffbf00';
-                    if (activeChart != 0)
+                    if (activeChart != 0) {
                         theSlider.style.display = 'inline-block';
+                        theLegendSlidersButton.style.display = 'inline-block';
+                    }
 
                     theStrainsButton.style.display = 'inline-block';
                     theCracksButton.style.display = 'inline-block';
