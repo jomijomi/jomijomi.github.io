@@ -79,20 +79,20 @@ Copyright XXXX The Azax Corporation
             transition: opacity .2s;
         }
 
-            /* Mouse-over effects */
-            .slider:hover {
-                opacity: 1; /* Fully shown on mouse-over */
-            }
+        /* Mouse-over effects */
+        .slider:hover {
+            opacity: 1; /* Fully shown on mouse-over */
+        }
 
-            /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
-            .slider::-webkit-slider-thumb {
-                -webkit-appearance: none; /* Override default look */
-                width: 35px; /* Set a specific slider handle width */
-                height: 35px; /* Slider handle height */
-                background: #04AA6D; /* Green background */
-                cursor: pointer; /* Cursor on hover */
-            }
-
+        /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none; /* Override default look */
+            width: 35px; /* Set a specific slider handle width */
+            height: 35px; /* Slider handle height */
+            background: #04AA6D; /* Green background */
+            cursor: pointer; /* Cursor on hover */
+        }
+        
         .btn {
             background-color: DodgerBlue;
             border: none;
@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v4 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v5 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -144,15 +144,16 @@ Copyright XXXX The Azax Corporation
         <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-compress"></i> εmin</button>
         <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-crop"></i> γxy</button>
         <button id="play_button" class="btn" style='display: none;'><i class="fa fa-wifi"></i></button>
+        <button id="legend_sliders_button" class="btn" style='display: none;'><i class="fa fa-sliders"></i></button>
         <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
         <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
-        <input type="range" min="0" max="51" value="22" class="slider" id="ar_slider" style='display: none;'>
+        <input type="range" min="0" max="10" value="9" class="slider" id="ar_slider" style='display: none;'>
 
         <div id="my-div-1">1</div>
         <div id="my-div-2">0</div>
         <div id="my-div-3">D</div>
 
-        <button id="legend_sliders_button" class="btn2" style='display: none;'><i class="fa fa-sliders"></i></button>
+
     </div>
     <script>
 
@@ -398,6 +399,18 @@ Copyright XXXX The Azax Corporation
         let theWebsocket = null;
 
         let theLegendSlidersButton = null;
+        let showLegendSlider = false;
+
+        let eps_max_slider_val = 9;
+        let eps_max_legend_val = 900.0; //eps_max_slider_val*100.0;
+
+        let eps_min_slider_val = 8;
+        let eps_min_legend_val = -800.0; //eps_min_slider_val*(-100.0);
+
+        let eta_max_slider_val = 7;
+        let eta_max_legend_val = 700.0; //eta_max_slider_val*100.0;
+
+        
 
         let legendTextTop = null;
         let legendTextBottom = null;
@@ -418,14 +431,24 @@ Copyright XXXX The Azax Corporation
             legendTextDateTime = document.getElementById("my-div-3");
             legendTextDateTime.innerText = ' ';
 
-            var theSlider = document.getElementById("ar_slider");
+            theSlider = document.getElementById("ar_slider");
 
             theSlider.oninput = function () {
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
-                currentSensorIdx = this.value;
+                //currentSensorIdx = this.value;
+                if (activeChart == 1) {
+                    eps_max_slider_val = this.value;
+                    eps_max_legend_val = eps_max_slider_val*100.0;                    
+                } else if (activeChart == 2) {
+                    eps_min_slider_val = this.value;
+                    eps_min_legend_val = eps_min_slider_val*(-100.0);
+                } else if (activeChart == 3) {
+                    eta_max_slider_val = this.value;
+                    eta_max_legend_val = eta_max_slider_val*100.0;
+                }
+
                 updateColors();
-                updateLegendText();
-                //render();
+                updateLegendText();                
             }
 
             theStrainsButton = document.getElementById("strains_button");
@@ -439,21 +462,49 @@ Copyright XXXX The Azax Corporation
             var theChartButton = document.getElementById("chart_button");
             theChartButton.style.display = 'inline-block';
 
+            theLegendSlidersButton.onclick = function () {
+                if (showLegendSlider) {
+                    //We ARE active, toggle buttons OFF and HIDE slider
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';   
+                    showLegendSlider = false;
+                } else {
+                    //Activate and SHOW slider
+                    theLegendSlidersButton.style.backgroundColor = '#ffbf00';                    
+                    theSlider.style.display = 'inline-block';
+
+                    if (activeChart == 1) {
+                        theSlider.value = eps_max_slider_val;                        
+                    } else if (activeChart == 2) {
+                        theSlider.value = eps_min_slider_val;                        
+                    } else if (activeChart == 3) {
+                        theSlider.value = eta_max_slider_val;                        
+                    }
+
+                    showLegendSlider = true;
+                }
+                
+            }
+
             theStrainsButton.onclick = function () {
                 if (activeChart == 1) {
                     //We ARE active, toggle buttons OFF and HIDE slider
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
                     theLegendSlidersButton.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
                     //Activate and SHOW slider
                     theStrainsButton.style.backgroundColor = '#ffbf00';
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
-                    theDefsButton.style.backgroundColor = 'DodgerBlue';
-                    theSlider.style.display = 'inline-block';
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';                    
                     theLegendSlidersButton.style.display = 'inline-block';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 1;
                     contourMesh.visible = true;
                 }
@@ -468,15 +519,19 @@ Copyright XXXX The Azax Corporation
                     //We ARE active, toggle buttons OFF
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
                     theLegendSlidersButton.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
                     theCracksButton.style.backgroundColor = '#ffbf00';
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theDefsButton.style.backgroundColor = 'DodgerBlue';
-                    theSlider.style.display = 'inline-block';
                     theLegendSlidersButton.style.display = 'inline-block';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 2;
                     contourMesh.visible = true;
                 }
@@ -491,15 +546,19 @@ Copyright XXXX The Azax Corporation
                     //We ARE active, toggle buttons OFF
                     theDefsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
                     theLegendSlidersButton.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
                 } else {
                     theDefsButton.style.backgroundColor = '#ffbf00';
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
-                    theSlider.style.display = 'inline-block';
                     theLegendSlidersButton.style.display = 'inline-block';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    showLegendSlider = false;
                     activeChart = 3;
                     contourMesh.visible = true;
                 }
@@ -552,10 +611,7 @@ Copyright XXXX The Azax Corporation
                         };
                     }
                 }
-
-                //updateColors();
-                //updateLegendText();
-                //render();
+                
             }
 
             theChartButton.onclick = function () {
@@ -568,13 +624,19 @@ Copyright XXXX The Azax Corporation
                     thePlayButton.style.display = 'none';
                     theSlider.style.display = 'none';
                     theLegendSlidersButton.style.display = 'none';
+                    showLegendSlider = false;
                     guiMode = 0;
                 } else {
                     //theChartButton.style.backgroundColor = '#ffbf00';
-                    if (activeChart != 0) {
-                        theSlider.style.display = 'inline-block';
-                        theLegendSlidersButton.style.display = 'inline-block';
-                    }
+                    //if (activeChart != 0) {
+                    //    theSlider.style.display = 'inline-block';
+                    //    theLegendSlidersButton.style.display = 'inline-block';
+                    //}
+
+                    theSlider.style.display = 'none';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theLegendSlidersButton.style.display = 'none';
+                    showLegendSlider = false;
 
                     theStrainsButton.style.display = 'inline-block';
                     theCracksButton.style.display = 'inline-block';
@@ -1307,17 +1369,15 @@ Copyright XXXX The Azax Corporation
                 legendTextBottom.innerText = ' ';
                 legendTextDateTime.innerText = ' ';
             } else if (activeChart == 1) {
-                legendTextTop.innerText = '1327';
-                legendTextBottom.innerText = '-647';
-                //legendTextDateTime.innerText = date_time;
-            } else if (activeChart == 2) {
-                legendTextTop.innerText = '0.68';
+                //legendTextTop.innerText = '1327';
+                legendTextTop.innerText = eps_max_legend_val.toString();
                 legendTextBottom.innerText = '0.0';
-                //legendTextDateTime.innerText = date_time;
-            } else if (activeChart == 3) {
+            } else if (activeChart == 2) {
                 legendTextTop.innerText = '0.0';
-                legendTextBottom.innerText = '-4.52';
-                //legendTextDateTime.innerText = date_time;
+                legendTextBottom.innerText = eps_min_legend_val.toString();
+            } else if (activeChart == 3) {
+                legendTextTop.innerText = eta_max_legend_val.toString();
+                legendTextBottom.innerText = '0.0';                
             }
 
         }
@@ -1421,26 +1481,25 @@ Copyright XXXX The Azax Corporation
                 return;
 
             } else if (activeChart == 1) {                
-                lut.setMax(1327);
-                lut.setMin(-647);
+                //lut.setMax(1327);
+                //lut.setMin(-647);
+                lut.setMax(eps_max_legend_val);
+                lut.setMin(0.0);
 
                 pressures = strains;
-            } else if (activeChart == 2) {
-                
-                lut.setMax(0.68);
-                lut.setMin(0.0); //clamp
+            } else if (activeChart == 2) {                
+                //lut.setMax(0.68);
+                //lut.setMin(0.0); //clamp
+                lut.setMax(0.0); //clamp
+                lut.setMin(eps_min_legend_val); //negative!
 
                 pressures = cracks;
-            } else if (activeChart == 3) {
-                //lut.setMax(3.561);
-                //lut.setMin(-0.321);
-                //NEG:
-                //lut.setMax(0.0); //clamp
-                //lut.setMin(-3.561); //negate                
-
+            } else if (activeChart == 3) {                
                 //As negative:
-                lut.setMax(0.0); //clamp
-                lut.setMin(-4.52); //negate
+                //lut.setMax(0.0); //clamp
+                //lut.setMin(-4.52); //negate
+                lut.setMax(eta_max_legend_val); //
+                lut.setMin(0.0); //clamp
 
                 pressures = defs;
             }
@@ -1448,18 +1507,14 @@ Copyright XXXX The Azax Corporation
 
 
             //date_time = time[currentSensorIdx];
-
-            //for ( let i = 0; i < pressures.array.length; i ++ ) {
-            for (let i = 0; i < pressures.length; i++) {
-
-                //const colorValue = pressures.array[ i ];
-                //const colorValue = pressures[i];
+            
+            for (let i = 0; i < pressures.length; i++) {                
                 let colorValue = 0.0;
-                if (activeChart == 3) {
-                    colorValue = -pressures[i]; //negate deflection so its similar as the Matlab plots
-                } else {
+                //if (activeChart == 3) {
+                //    colorValue = -pressures[i]; //negate deflection so its similar as the Matlab plots
+                //} else {
                     colorValue = pressures[i];
-                }
+                //}
 
                 const color = lut.getColor(colorValue);
 
