@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.7</title>
+    <title>three.js webgl - V8.8</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -978,10 +978,10 @@
                     let end_date = Date.parse(end_date_final);
 
                     console.log('begin_date (The Date object):');
-                    console.log(getDateTimeStringFromDate(begin_date));
+                    console.log(getDateTimeStringFromDate(new Date(begin_date)));
 
                     console.log('end_date (The Date object):');
-                    console.log(getDateTimeStringFromDate(end_date));
+                    console.log(getDateTimeStringFromDate(new Date(end_date)));
                     
                     toggleVar = !toggleVar;
 
