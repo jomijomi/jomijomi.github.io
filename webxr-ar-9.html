@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.8</title>
+    <title>three.js webgl - V8.9</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -973,15 +973,22 @@
                     var end_date_final = end_date_tmp.trimEnd();
                     console.log(end_date_final);
 
-                    //Create Data object
+                    //Get time since epoc
                     let begin_date = Date.parse(begin_date_final);
                     let end_date = Date.parse(end_date_final);
 
+                    //Can we do like this...?
+                    let mid_date = begin_date + (end_date - begin_date) * 0.5;
+
+                    //Convert to real Date object (...and then to string again)
                     console.log('begin_date (The Date object):');
                     console.log(getDateTimeStringFromDate(new Date(begin_date)));
 
                     console.log('end_date (The Date object):');
                     console.log(getDateTimeStringFromDate(new Date(end_date)));
+
+                    console.log('mid_date (The Date object):');
+                    console.log(getDateTimeStringFromDate(new Date(mid_date)));
                     
                     toggleVar = !toggleVar;
 
