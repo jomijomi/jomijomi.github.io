@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.2</title>
+    <title>three.js webgl - V8.3</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -843,6 +843,19 @@
             }
         }
 
+        function download(filename, text) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
+        }
+
         function onClickSendButton() {
 
             console.log('onClickSendButton');
@@ -893,6 +906,8 @@
 
                     console.log('ALTERNATIVE 02');
                     console.log(e.data);
+
+                    download('test_k.txt', e.data);
                 }
             };
 
