@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.3</title>
+    <title>three.js webgl - V8.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -839,7 +839,9 @@
                 //Socket not connected yet...
             }
             else {
-                theWebsocket.send('k');
+                let aK = 'k';
+                //theWebsocket.send('k');
+                theWebsocket.send(aK);
             }
         }
 
@@ -893,6 +895,21 @@
                 else {
                     //This should be the time interval, right..?
                     console.log(e.data);
+                    var dates = e.data;
+                    var datesArray = dates.split(';');
+
+                    console.log(datesArray[0]);
+                    console.log(datesArray[1]);
+
+                    var begin_date_tmp = datesArray[0].replace('"', ' ');
+                    console.log(begin_date_tmp);
+                    var begin_date_final = begin_date_tmp.trimStart();
+                    console.log(begin_date_final);
+
+                    var end_date_tmp = datesArray[1].replace('"', ' ');
+                    console.log(end_date_tmp);
+                    var end_date_final = begin_date_tmp.trimEnd();
+                    console.log(end_date_final);
                 }
 
 
@@ -907,7 +924,7 @@
                     console.log('ALTERNATIVE 02');
                     console.log(e.data);
 
-                    download('test_k.txt', e.data);
+                    //download('test_k.txt', e.data);
                 }
             };
 
