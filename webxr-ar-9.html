@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.4</title>
+    <title>three.js webgl - V8.5</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -174,6 +174,8 @@
         let theCloseSocketButton = null;
         let theTextArea = null;
         let theWebsocket = null;
+
+        let toggleVar = true;
 
         let legendTextTop = null;
         let legendTextBottom = null;
@@ -910,6 +912,15 @@
                     console.log(end_date_tmp);
                     var end_date_final = begin_date_tmp.trimEnd();
                     console.log(end_date_final);
+
+                    toggleVar = !toggleVar;
+
+                    if (toggleVar) {
+                        theWebsocket.send(begin_date_final);
+                    }
+                    else {
+                        theWebsocket.send(end_date_final);
+                    }
                 }
 
 
