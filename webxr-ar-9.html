@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.6</title>
+    <title>three.js webgl - V8.7</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -860,6 +860,66 @@
             document.body.removeChild(element);
         }
 
+        function getDateTimeStringFromDate(theDate) {
+
+            let yearStr = theDate.getFullYear().toString();
+            
+            let month = theDate.getMonth() + 1; //convert to "one-based"
+            let monthStr = null;
+            if (month < 10) {
+                monthStr = '0';
+                monthStr += month.toString();
+            }
+            else {
+                monthStr = month.toString();
+            }
+
+            //let dateStr = theDate.getDate().toString();
+            let date = theDate.getDate();
+            let dateStr = null;
+            if (date < 10) {
+                dateStr = '0';
+                dateStr += date.toString();
+            }
+            else {
+                dateStr = date.toString();
+            }
+
+            let hours = theDate.getHours();
+            let hoursStr = null;
+            if (hours < 10) {
+                hoursStr = '0';
+                hoursStr += hours.toString();
+            }
+            else {
+                hoursStr = hours.toString();
+            }
+
+
+            let minutes = theDate.getMinutes();
+            let minutesStr = null;
+            if (minutes < 10) {
+                minutesStr = '0';
+                minutesStr += minutes.toString();
+            }
+            else {
+                minutesStr = minutes.toString();
+            }
+
+            let seconds = theDate.getSeconds();
+            let secondsStr = null;
+            if (seconds < 10) {
+                secondsStr = '0';
+                secondsStr += seconds.toString();
+            }
+            else {
+                secondsStr = seconds.toString();
+            }
+
+            let finalStr = yearStr + '-' + monthStr + '-' + dateStr + ' ' + hoursStr + ':' + minutesStr + ':' + secondsStr;
+            return finalStr;
+        }
+
         function onClickSendButton() {
 
             console.log('onClickSendButton');
@@ -913,6 +973,16 @@
                     var end_date_final = end_date_tmp.trimEnd();
                     console.log(end_date_final);
 
+                    //Create Data object
+                    let begin_date = Date.parse(begin_date_final);
+                    let end_date = Date.parse(end_date_final);
+
+                    console.log('begin_date (The Date object):');
+                    console.log(getDateTimeStringFromDate(begin_date));
+
+                    console.log('end_date (The Date object):');
+                    console.log(getDateTimeStringFromDate(end_date));
+                    
                     toggleVar = !toggleVar;
 
                     if (toggleVar) {
