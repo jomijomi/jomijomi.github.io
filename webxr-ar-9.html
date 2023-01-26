@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.5</title>
+    <title>three.js webgl - V8.6</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -910,15 +910,17 @@
 
                     var end_date_tmp = datesArray[1].replace('"', ' ');
                     console.log(end_date_tmp);
-                    var end_date_final = begin_date_tmp.trimEnd();
+                    var end_date_final = end_date_tmp.trimEnd();
                     console.log(end_date_final);
 
                     toggleVar = !toggleVar;
 
                     if (toggleVar) {
+                        console.log('Requesting oldest data');
                         theWebsocket.send(begin_date_final);
                     }
                     else {
+                        console.log('Requesting newest data');
                         theWebsocket.send(end_date_final);
                     }
                 }
