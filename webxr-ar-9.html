@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.0</title>
+    <title>three.js webgl - V8.2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -876,9 +876,22 @@
                     //loadModelFromJSON(theDataAsJson);
 
                     //loadModelFromJSON(e.data)
-                }
+                }                
                 else {
                     //This should be the time interval, right..?
+                    console.log(e.data);
+                }
+
+
+                if (e.data.startsWith('25-Jan-2023')) {
+
+                    console.log('ALTERNATIVE 01');
+                    console.log(e.data);
+                }
+
+                if (e.data.startsWith('"25-Jan-2023')) {
+
+                    console.log('ALTERNATIVE 02');
                     console.log(e.data);
                 }
             };
