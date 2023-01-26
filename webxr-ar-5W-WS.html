@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v7 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v8.0 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -572,8 +572,11 @@ Copyright XXXX The Azax Corporation
                 if (isSimulating) {
                     //We ARE active, toggle buttons OFF
                     thePlayButton.style.backgroundColor = 'DodgerBlue';
-                    isSimulating = false;
+                    isSimulating = false;                    
                     //Stop interval...
+                    window.clearInterval(theIntervalID);
+
+                    //...kill socket
                     if (theWebsocket == null) {
                         //No id yet...
                     }
@@ -581,6 +584,7 @@ Copyright XXXX The Azax Corporation
                         theWebsocket.close();
                         theWebsocket = null;
                     }
+
                 } else {
                     thePlayButton.style.backgroundColor = '#ffbf00';
                     isSimulating = true;
@@ -599,9 +603,37 @@ Copyright XXXX The Azax Corporation
                         };
 
                         theWebsocket.onmessage = (e) => {
-                            //console.log('onmessage');                        
-                            let theDataAsJson = JSON.parse(e.data);
-                            loadUserDataFromJSON(theDataAsJson);
+                            //console.log('onmessage');
+                            if (e.data.startsWith('{')) {
+                                let theDataAsJson = JSON.parse(e.data);
+                                loadUserDataFromJSON(theDataAsJson);
+                            }
+                            else {
+
+                                var dates = e.data;
+                                var datesArray = dates.split(';');
+
+                                var begin_date_tmp = datesArray[0].replace('"', ' ');                                
+                                var begin_date_final = begin_date_tmp.trimStart();                                
+
+                                var end_date_tmp = datesArray[1].replace('"', ' ');                                
+                                var end_date_final = end_date_tmp.trimEnd();                                
+
+                                //Get time since epoc
+                                //let begin_date = Date.parse(begin_date_final);
+                                //let end_date = Date.parse(end_date_final);
+
+                                //Can we do like this...? Yes :)
+                                //let mid_date = begin_date + (end_date - begin_date) * 0.5;
+
+                                //Create real Date object (...from epoc time)
+                                //console.log(getDateTimeStringFromDate(new Date(begin_date)));
+                                //console.log(getDateTimeStringFromDate(new Date(end_date)));
+                                //console.log(getDateTimeStringFromDate(new Date(mid_date)));
+
+                                //console.log('Requesting newest data');
+                                theWebsocket.send(end_date_final); //Send request!
+                            }
 
                         };
 
@@ -610,6 +642,9 @@ Copyright XXXX The Azax Corporation
                             //console.log(e.data);                        
                         };
                     }
+
+                    //Start interval
+                    theIntervalID = window.setInterval(sendKToServer, 6000);
                 }
                 
             }
@@ -1301,6 +1336,80 @@ Copyright XXXX The Azax Corporation
             updateColors();
             updateLegendText();
 
+        }
+
+        function getDateTimeStringFromDate(theDate) {
+
+            let yearStr = theDate.getFullYear().toString();
+
+            let month = theDate.getMonth() + 1; //convert to "one-based"
+            let monthStr = null;
+            if (month < 10) {
+                monthStr = '0';
+                monthStr += month.toString();
+            }
+            else {
+                monthStr = month.toString();
+            }
+
+            //let dateStr = theDate.getDate().toString();
+            let date = theDate.getDate();
+            let dateStr = null;
+            if (date < 10) {
+                dateStr = '0';
+                dateStr += date.toString();
+            }
+            else {
+                dateStr = date.toString();
+            }
+
+            let hours = theDate.getHours();
+            let hoursStr = null;
+            if (hours < 10) {
+                hoursStr = '0';
+                hoursStr += hours.toString();
+            }
+            else {
+                hoursStr = hours.toString();
+            }
+
+
+            let minutes = theDate.getMinutes();
+            let minutesStr = null;
+            if (minutes < 10) {
+                minutesStr = '0';
+                minutesStr += minutes.toString();
+            }
+            else {
+                minutesStr = minutes.toString();
+            }
+
+            let seconds = theDate.getSeconds();
+            let secondsStr = null;
+            if (seconds < 10) {
+                secondsStr = '0';
+                secondsStr += seconds.toString();
+            }
+            else {
+                secondsStr = seconds.toString();
+            }
+
+            let finalStr = yearStr + '-' + monthStr + '-' + dateStr + ' ' + hoursStr + ':' + minutesStr + ':' + secondsStr;
+            return finalStr;
+        }
+
+        function sendKToServer() {
+
+            if (theWebsocket == null) {
+                //Socket not connected yet...
+            }
+            else {
+
+                let aK = 'k';
+                //theWebsocket.send('k');
+                theWebsocket.send(aK);
+            }
+            
         }
 
         function simulateWebsocketReceive() {
