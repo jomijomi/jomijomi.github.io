@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.5</title>
+    <title>three.js webgl - V9.6</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -625,14 +625,14 @@
 
             //Set slider:
             //min, max,step,value
-            theCalendarSlider.min(0);
-            theCalendarSlider.max(diffMins);
+            theCalendarSlider.min = 0;
+            theCalendarSlider.max = diffMins;
             if (diffMins >= 1) {
-                theCalendarSlider.step(1);
+                theCalendarSlider.step = 1;
             } else {
-                theCalendarSlider.step(0);
+                theCalendarSlider.step = 0;
             }
-            theCalendarSlider.value(Math.floor(diffMins * 0.5));
+            theCalendarSlider.value = Math.floor(diffMins * 0.5);
         }
 
         function loadUserDataFromJSON(theJsonObj) {
