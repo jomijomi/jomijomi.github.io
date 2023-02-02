@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V8.9</title>
+    <title>three.js webgl - V9.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -156,10 +156,30 @@
         //let maxValue = -1000;
         //let minValue = 1000;
 
+        //"Simulate" start/end date as received from server
+        let startDateTest = '27-Jan-2023 12:35:15';
+        let endDateTest = '27-Jan-2023 14:51:01';
+
+        //Use below to get num minutes (or seconds?) between the two dates
+        /*
+        var today = new Date();
+        var Christmas = new Date(today.getFullYear() + "-12-25");
+        var diffMs = (Christmas - today); // milliseconds between now & Christmas
+        var diffDays = Math.floor(diffMs / 86400000); // days
+        var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+        var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+        console.log(diffDays + " days, " + diffHrs + " hours, " + diffMins + " minutes until Christmas =)");
+        */
+        /*
+         "stepsPerMinute" is typically 1, meaning if we have 90 minutes of data, the slider has 90 steps
+         updateSliderSettings(startDate, endDate, stepsPerMinute)
+         */
+
 
         let guiMode = 0;
         let activeChart = 0;
 
+        let theSlider = null;
         let theStrainsButton = null;
         let theCracksButton = null;
         let theDefsButton = null;
@@ -252,14 +272,23 @@
             legendTextDateTime = document.getElementById("my-div-3");
             legendTextDateTime.innerText = ' ';
 
-            var theSlider = document.getElementById("ar_slider");
+            theSlider = document.getElementById("ar_slider");
 
             theSlider.oninput = function () {
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
+                /*
                 currentSensorIdx = this.value;
                 updateColors();
                 updateLegendText();
                 render();
+                */
+                console.log("theSlider.oninput");
+            }
+
+            theSlider.onchange = function () {
+                
+                console.log("theSlider.onchange");
+                
             }
 
             theStrainsButton = document.getElementById("strains_button");
@@ -525,6 +554,31 @@
                 renderer.render(uiScene, orthoCamera);
             }
 
+        }
+
+        //startDate and endDate are real Date-objects
+        //"stepsPerMinute" is typically 1, meaning if we have 90 minutes of data, the slider has 90 steps
+        function updateSliderSettings(startDate, endDate, stepsPerMinute) {
+
+            if (startDate instanceof Date && startDate instanceof Date) {
+                //ok
+            }
+            else {
+                return;
+            }
+
+
+            var diffMs = (endDate - startDate); // milliseconds between startDate & endDate
+            var diffDays = Math.floor(diffMs / 86400000); // days
+            var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+            var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+
+            //Set slider:
+            //min, max,step,value
+            theSlider.min(0);
+            theSlider.max(diffMins);
+            theSlider.step(0);
+            theSlider.value(Math.floor(diffMins * 0.5));
         }
 
         function loadUserDataFromJSON(theJsonObj) {
