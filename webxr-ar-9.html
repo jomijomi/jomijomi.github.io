@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.7</title>
+    <title>three.js webgl - V9.8</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -310,7 +310,9 @@
             theCalendarSlider.onchange = function () {
 
                 console.log("theCalendarSlider.onchange");
-                console.log(getDateTimeStringFromDate(new Date(this.value)));
+                let slidertime = Date.parse(startDateTest) + (this.value) * 60 * 1000; //time in ms from epoc
+                //console.log(getDateTimeStringFromDate(new Date(this.value)));
+                console.log(getDateTimeStringFromDate(new Date(slidertime)));
 
             }
 
@@ -632,16 +634,18 @@
             console.log('diffMins:');
             console.log(diffMins);
 
+            var totalMinutes = diffHrs * 60 + diffMins;
+
             //Set slider:
             //min, max,step,value
             theCalendarSlider.min = 0;
-            theCalendarSlider.max = diffMins;
+            theCalendarSlider.max = totalMinutes;
             if (diffMins >= 1) {
                 theCalendarSlider.step = 1;
             } else {
                 theCalendarSlider.step = 0;
             }
-            theCalendarSlider.value = Math.floor(diffMins * 0.5);
+            theCalendarSlider.value = Math.floor(totalMinutes * 0.5);
         }
 
         function loadUserDataFromJSON(theJsonObj) {
