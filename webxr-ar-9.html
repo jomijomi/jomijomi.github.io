@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.0</title>
+    <title>three.js webgl - V9.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -103,6 +103,7 @@
     <button id="cracks_button" class="btn" style='display: none;'><i class="fa fa-compress"></i> εmin</button>
     <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-crop"></i> γxy</button>
     <button id="play_button" class="btn" style='display: none;'><i class="fa fa-wifi"></i></button>
+    <button id="calendar_button" class="btn" style='display: none;'><i class="fa fa-calendar"></i></button>
     <textarea cols="60" rows="3"></textarea>
     <button id="send_button">Send</button>
     <button id="send_k_button">Send k to socket...</button>
@@ -113,6 +114,7 @@
     <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
     <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
     <input type="range" min="0" max="2" value="0" class="slider" id="ar_slider" style='display: none;'>
+    <input type="range" min="0" max="10" value="0" class="slider" id="calendar_slider" style='display: none;'>
 
     <div id="container"></div>
 
@@ -185,6 +187,8 @@
         let theDefsButton = null;
 
         let thePlayButton = null;
+        let theCalendarButton = null;
+        let theCalendarSlider = null;
         let isSimulating = false;
         let theIntervalID = 0;
 
@@ -274,6 +278,8 @@
 
             theSlider = document.getElementById("ar_slider");
 
+            theCalendarSlider = document.getElementById("calendar_slider");
+
             theSlider.oninput = function () {
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
                 /*
@@ -286,9 +292,9 @@
             }
 
             theSlider.onchange = function () {
-                
+
                 console.log("theSlider.onchange");
-                
+
             }
 
             theStrainsButton = document.getElementById("strains_button");
@@ -296,6 +302,7 @@
             theDefsButton = document.getElementById("defs_button");
 
             thePlayButton = document.getElementById("play_button");
+            theCalendarButton = document.getElementById("calendar_button");
 
             theSendButton = document.getElementById("send_button");
             theSendButton.addEventListener("click", onClickSendButton);
@@ -917,7 +924,7 @@
         function getDateTimeStringFromDate(theDate) {
 
             let yearStr = theDate.getFullYear().toString();
-            
+
             let month = theDate.getMonth() + 1; //convert to "one-based"
             let monthStr = null;
             if (month < 10) {
@@ -1007,7 +1014,7 @@
                     //loadModelFromJSON(theDataAsJson);
 
                     //loadModelFromJSON(e.data)
-                }                
+                }
                 else {
                     //This should be the time interval, right..?
                     console.log(e.data);
@@ -1043,7 +1050,12 @@
 
                     console.log('mid_date (The Date object):');
                     console.log(getDateTimeStringFromDate(new Date(mid_date)));
-                    
+
+                    console.log('Date.now():');
+                    console.log(Date.now());
+                    console.log('getDateTimeStringFromDate(Date.now()):');
+                    console.log(getDateTimeStringFromDate(Date.now()));
+
                     toggleVar = !toggleVar;
 
                     if (toggleVar) {
