@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.4</title>
+    <title>three.js webgl - V9.5</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -310,6 +310,7 @@
             theCalendarSlider.onchange = function () {
 
                 console.log("theCalendarSlider.onchange");
+                console.log(getDateTimeStringFromDate(new Date(this.value)));
 
             }
 
@@ -426,6 +427,11 @@
                     isInCalendarMode = true;
                     theCalendarSlider.style.display = 'inline-block';
                     //Send k to server (server will reply with date interval)
+
+                    let begin_date_test = Date.parse(startDateTest);
+                    let end_date_test = Date.parse(endDateTest);
+
+                    updateSliderSettings(new Date(begin_date_test), new Date(end_date_test), 1);
                 }
 
                 updateColors();
@@ -619,10 +625,14 @@
 
             //Set slider:
             //min, max,step,value
-            theSlider.min(0);
-            theSlider.max(diffMins);
-            theSlider.step(0);
-            theSlider.value(Math.floor(diffMins * 0.5));
+            theCalendarSlider.min(0);
+            theCalendarSlider.max(diffMins);
+            if (diffMins >= 1) {
+                theCalendarSlider.step(1);
+            } else {
+                theCalendarSlider.step(0);
+            }
+            theCalendarSlider.value(Math.floor(diffMins * 0.5));
         }
 
         function loadUserDataFromJSON(theJsonObj) {
