@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v8.0 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v8.1 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -145,6 +145,7 @@ Copyright XXXX The Azax Corporation
         <button id="defs_button" class="btn" style='display: none;'><i class="fa fa-crop"></i> γxy</button>
         <button id="play_button" class="btn" style='display: none;'><i class="fa fa-wifi"></i></button>
         <button id="legend_sliders_button" class="btn" style='display: none;'><i class="fa fa-sliders"></i></button>
+        <button id="calendar_button" class="btn" style='display: none;'><i class="fa fa-calendar"></i></button>
         <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
         <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
         <input type="range" min="0" max="10" value="9" class="slider" id="ar_slider" style='display: none;'>
@@ -396,6 +397,8 @@ Copyright XXXX The Azax Corporation
         let isSimulating = false;
         let theIntervalID = 0;
 
+        let theCalendarButton = null;
+
         let theWebsocket = null;
 
         let theLegendSlidersButton = null;
@@ -456,8 +459,9 @@ Copyright XXXX The Azax Corporation
             theDefsButton = document.getElementById("defs_button");
 
             thePlayButton = document.getElementById("play_button");
-
             theLegendSlidersButton = document.getElementById("legend_sliders_button");
+
+            theCalendarButton = document.getElementById("calendar_button");
 
             var theChartButton = document.getElementById("chart_button");
             theChartButton.style.display = 'inline-block';

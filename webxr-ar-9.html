@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.3</title>
+    <title>three.js webgl - V9.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -114,7 +114,7 @@
     <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
     <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
     <input type="range" min="0" max="2" value="0" class="slider" id="ar_slider" style='display: none;'>
-    <input type="range" min="0" max="10" value="0" class="slider" id="calendar_slider" style='display: none;'>
+    <input type="range" min="0" max="0" value="0" class="slider" id="calendar_slider" style='display: none;'>
 
     <div id="container"></div>
 
@@ -187,8 +187,11 @@
         let theDefsButton = null;
 
         let thePlayButton = null;
+
         let theCalendarButton = null;
+        let isInCalendarMode = false;
         let theCalendarSlider = null;
+
         let isSimulating = false;
         let theIntervalID = 0;
 
@@ -278,7 +281,7 @@
 
             theSlider = document.getElementById("ar_slider");
 
-            theCalendarSlider = document.getElementById("calendar_slider");
+            
 
             theSlider.oninput = function () {
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
@@ -294,6 +297,19 @@
             theSlider.onchange = function () {
 
                 console.log("theSlider.onchange");
+
+            }
+
+            theCalendarSlider = document.getElementById("calendar_slider");
+
+            theCalendarSlider.oninput = function () {
+                
+                console.log("theCalendarSlider.oninput");
+            }
+
+            theCalendarSlider.onchange = function () {
+
+                console.log("theCalendarSlider.onchange");
 
             }
 
@@ -398,6 +414,25 @@
                 render();
             }
 
+            theCalendarButton.onclick = function () {
+                if (isInCalendarMode) {
+                    //We ARE active, toggle buttons OFF
+                    theCalendarButton.style.backgroundColor = 'DodgerBlue';
+                    isInCalendarMode = false;
+                    theCalendarSlider.style.display = 'none';
+                    
+                } else {
+                    theCalendarButton.style.backgroundColor = '#ffbf00';
+                    isInCalendarMode = true;
+                    theCalendarSlider.style.display = 'inline-block';
+                    //Send k to server (server will reply with date interval)
+                }
+
+                updateColors();
+                updateLegendText();
+                render();
+            }
+
             /*
             thePlayButton.onclick = function () {
                 if (isSimulating) {
@@ -431,6 +466,7 @@
                     theCracksButton.style.display = 'none';
                     theDefsButton.style.display = 'none';
                     thePlayButton.style.display = 'none';
+                    theCalendarButton.style.display = 'none';
                     theSlider.style.display = 'none';
                     guiMode = 0;
                     legendTextTop.innerText = ' ';
@@ -444,6 +480,7 @@
                     theCracksButton.style.display = 'inline-block';
                     theDefsButton.style.display = 'inline-block';
                     thePlayButton.style.display = 'inline-block';
+                    theCalendarButton.style.display = 'inline-block';
                     guiMode = 1;
                 }
 
@@ -1040,6 +1077,11 @@
 
                     //Can we do like this...?
                     let mid_date = begin_date + (end_date - begin_date) * 0.5;
+
+                    let diffInSeconds = Math.floor((end_date - begin_date) / 1000.0);
+                    if (diffInSeconds < 1) {
+                        console.log('The interval between begin-end time is less than one second!');
+                    }
 
                     //Convert to real Date object (...and then to string again)
                     console.log('begin_date (The Date object):');
