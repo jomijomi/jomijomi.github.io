@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.6</title>
+    <title>three.js webgl - V9.7</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -610,18 +610,27 @@
         //"stepsPerMinute" is typically 1, meaning if we have 90 minutes of data, the slider has 90 steps
         function updateSliderSettings(startDate, endDate, stepsPerMinute) {
 
-            if (startDate instanceof Date && startDate instanceof Date) {
+            if (startDate instanceof Date && endDate instanceof Date) {
                 //ok
             }
             else {
+                console.log('updateSliderSettings: startDate or endDate is not of type Date');
                 return;
             }
 
 
             var diffMs = (endDate - startDate); // milliseconds between startDate & endDate
+            console.log('diffMs:');
+            console.log(diffMs);
             var diffDays = Math.floor(diffMs / 86400000); // days
+            console.log('diffDays:');
+            console.log(diffDays);
             var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
+            console.log('diffHrs:');
+            console.log(diffHrs);
             var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
+            console.log('diffMins:');
+            console.log(diffMins);
 
             //Set slider:
             //min, max,step,value
