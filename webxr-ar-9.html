@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V10.0</title>
+    <title>three.js webgl - V10.1</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -107,6 +107,7 @@
     <textarea cols="60" rows="3"></textarea>
     <button id="send_button">Send</button>
     <button id="send_k_button">Send k to socket...</button>
+    <button id="ask_latest_button">Ask for latest data...</button>
     <button id="close_socket_button">Close Socket</button>
     <input type="file" name="inputfile"
            id="inputfile">
@@ -198,6 +199,7 @@
         //websocket stuff
         let theSendButton = null;
         let theSendKButton = null;
+        let theAskLatestButton = null;
         let theCloseSocketButton = null;
         let theTextArea = null;
         let theWebsocket = null;
@@ -281,7 +283,7 @@
 
             theSlider = document.getElementById("ar_slider");
 
-            
+
 
             theSlider.oninput = function () {
                 //output.innerHTML = this.value + Math.floor(Math.random() * 10);
@@ -303,7 +305,7 @@
             theCalendarSlider = document.getElementById("calendar_slider");
 
             theCalendarSlider.oninput = function () {
-                
+
                 console.log("theCalendarSlider.oninput");
             }
 
@@ -328,6 +330,9 @@
 
             theSendKButton = document.getElementById("send_k_button");
             theSendKButton.addEventListener("click", onClickSendKButton);
+
+            theAskLatestButton = document.getElementById("ask_latest_button");
+            theAskLatestButton.addEventListener("click", onClickAskLatestButton);
 
             theCloseSocketButton = document.getElementById("close_socket_button");
             theCloseSocketButton.addEventListener("click", onClickCloseSocketButton);
@@ -423,7 +428,7 @@
                     theCalendarButton.style.backgroundColor = 'DodgerBlue';
                     isInCalendarMode = false;
                     theCalendarSlider.style.display = 'none';
-                    
+
                 } else {
                     theCalendarButton.style.backgroundColor = '#ffbf00';
                     isInCalendarMode = true;
@@ -983,6 +988,18 @@
             }
             else {
                 let aK = 'k';
+                //theWebsocket.send('k');
+                theWebsocket.send(aK);
+            }
+        }
+
+        function onClickAskLatestButton() {
+            console.log('onClickAskLatestButton');
+            if (theWebsocket == null) {
+                //Socket not connected yet...
+            }
+            else {
+                let aK = '10000000000';
                 //theWebsocket.send('k');
                 theWebsocket.send(aK);
             }
