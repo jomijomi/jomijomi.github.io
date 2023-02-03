@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V9.9</title>
+    <title>three.js webgl - V10.0</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -763,8 +763,10 @@
                 //loader.load('models/json/mainWall-contour-22-12-07.json', function (geometry) {
                 //loader.load('models/json/mainWall-pos.json', function (geometry) { //Only position???
                 //loader.load('models/json/AR_beam-contour2.json', function (geometry) { //SensIT v01
-                loader.load('models/json/mainWall-pos.json', function (geometry) { //Only position???
+                //loader.load('models/json/mainWall-pos.json', function (geometry) { //Only position???
+                loader.load('models/json/mainWall-pos-back-v2.json', function (geometry) {
 
+                    /*
                     let swapXandY = false;
                     if (swapXandY) {
                         console.log('Swapping X and Y...');
@@ -789,7 +791,25 @@
                         }
 
                         geometry.attributes.position.needsUpdate = true;
+                    }*/
+
+                    //First, flip geometry in X-axis
+                    let arrayLength = geometry.attributes.position.array.length;
+                    const positions = geometry.attributes.position.array;
+
+                    let currentPos = 0;
+                    for (let ii = 0, nn = geometry.attributes.position.count; ii < nn; ++ii) {
+
+                        let X = positions[currentPos];
+                        //let Y = positions[currentPos + 1];
+                        //let Z = positions[currentPos + 2];
+
+                        positions[currentPos] = X * (-1.0);
+
+                        currentPos += 3;
                     }
+
+                    geometry.attributes.position.needsUpdate = true;
 
 
                     geometry.computeBoundingBox();
