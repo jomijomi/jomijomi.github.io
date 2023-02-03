@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v8.5 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v8.7 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -475,7 +475,7 @@ Copyright XXXX The Azax Corporation
             theCalendarSlider.onchange = function () {
 
                 //console.log("theCalendarSlider.onchange");
-                let slidertime = Date.parse(calendarStartDate) + (this.value) * 60 * 1000; //time in ms from epoc
+                //let slidertime = Date.parse(calendarStartDate) + (this.value) * 60 * 1000; //time in ms from epoc
                 //console.log(getDateTimeStringFromDate(new Date(this.value)));
                 //console.log(getDateTimeStringFromDate(new Date(slidertime)));
 
@@ -483,7 +483,8 @@ Copyright XXXX The Azax Corporation
                     //not connected
                 }
                 else {
-                    theWebsocket.send(getDateTimeStringFromDate(new Date(slidertime)));
+                    //theWebsocket.send(getDateTimeStringFromDate(new Date(slidertime)));
+                    theWebsocket.send(this.value.toString());
                 }
 
             }
@@ -642,7 +643,20 @@ Copyright XXXX The Azax Corporation
                             }
                             else {
 
-                                var dates = e.data;
+                                //"3"
+                                var numStepsStrOrig = e.data;
+                                var numStepsStr1 = numStepsStrOrig.replace('"', ' ');
+                                var numStepsStr2 = numStepsStr1.trimStart();
+                                var numStepsStrFinal = numStepsStr2.trimEnd();
+
+                                //As int
+                                var numStepsAsInt = parseInt(numStepsStrFinal);
+
+                                updateSliderSettingsNum(numStepsAsInt);
+                                
+                                theWebsocket.send(numStepsStrFinal); //Send request for latest!
+
+                                /*
                                 var datesArray = dates.split(';');
 
                                 var begin_date_tmp = datesArray[0].replace('"', ' ');
@@ -665,10 +679,11 @@ Copyright XXXX The Azax Corporation
                                 //console.log(getDateTimeStringFromDate(new Date(end_date)));
                                 //console.log(getDateTimeStringFromDate(new Date(mid_date)));
 
-                                updateSliderSettings(new Date(begin_date_final), new Date(end_date_final), 1);
+                                updateSliderSettingsDate(new Date(begin_date_final), new Date(end_date_final), 1);
 
                                 //console.log('Requesting newest data');
                                 theWebsocket.send(end_date_final); //Send request for latest!
+                                */
                             }
 
                         };
@@ -727,6 +742,20 @@ Copyright XXXX The Azax Corporation
                             }
                             else {
 
+                                //"3"
+                                var numStepsStrOrig = e.data;
+                                var numStepsStr1 = numStepsStrOrig.replace('"', ' ');
+                                var numStepsStr2 = numStepsStr1.trimStart();
+                                var numStepsStrFinal = numStepsStr2.trimEnd();
+
+                                //As int
+                                var numStepsAsInt = parseInt(numStepsStrFinal);
+
+                                updateSliderSettingsNum(numStepsAsInt);
+
+                                theWebsocket.send(numStepsStrFinal); //Send request for latest!
+
+                                /*
                                 var dates = e.data;
                                 var datesArray = dates.split(';');
 
@@ -750,10 +779,11 @@ Copyright XXXX The Azax Corporation
                                 //console.log(getDateTimeStringFromDate(new Date(end_date)));
                                 //console.log(getDateTimeStringFromDate(new Date(mid_date)));
 
-                                updateSliderSettings(new Date(begin_date_final), new Date(end_date_final), 1);
+                                updateSliderSettingsDate(new Date(begin_date_final), new Date(end_date_final), 1);
 
                                 //console.log('Requesting newest data');
                                 theWebsocket.send(end_date_final); //Send request for latest!
+                                */
                             }
 
                         };
@@ -1463,9 +1493,37 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function updateSliderSettingsNum(numberOfSteps) {
+
+            if (theCalendarSlider == null) {
+                return;
+            }
+
+            if (numberOfSteps < 1) {
+
+                theCalendarSlider.min = 0; //Matlab is one-based
+                theCalendarSlider.max = 0;                
+                theCalendarSlider.step = 0;
+                theCalendarSlider.value = 0;
+                return;
+            }
+                        
+            //Set slider:
+            //min, max,step,value
+            theCalendarSlider.min = 1; //Matlab is one-based
+            theCalendarSlider.max = numberOfSteps;
+            if (diffMins >= 1) {
+                theCalendarSlider.step = 1;
+            } else {
+                theCalendarSlider.step = 0;
+            }
+            
+            theCalendarSlider.value = numberOfSteps;
+        }
+
         //startDate and endDate are real Date-objects
         //"stepsPerMinute" is typically 1, meaning if we have 90 minutes of data, the slider has 90 steps
-        function updateSliderSettings(startDate, endDate, stepsPerMinute) {
+        function updateSliderSettingsDate(startDate, endDate, stepsPerMinute) {
 
             if (theCalendarSlider == null) {
                 return;
