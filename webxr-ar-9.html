@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V10.3</title>
+    <title>three.js webgl - V10.4</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -1098,10 +1098,11 @@
             };
 
             theWebsocket.onmessage = (e) => {
-                console.log('onmessage');
+                console.log('onmessage - 01');
                 //writeToScreen(`<span>RESPONSE: ${e.data}</span>`);
-
+                console.log(e.data);
                 download('test_k_new.txt', e.data);
+                console.log('onmessage - 02');
 
                 //if (e.data.startsWith('{"metadata"'))
                 if (e.data.startsWith('{')) {
@@ -1118,7 +1119,7 @@
                     //This should be the time interval, right..?
                     //NOTE: No longer time interval, just number of stored values
                     console.log(e.data);
-                    download('test_k_new.txt', e.data);
+                    //download('test_k_new.txt', e.data);
 
                     /*
                     var dates = e.data;
