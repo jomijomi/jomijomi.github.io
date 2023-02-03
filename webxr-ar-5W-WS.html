@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v8.1 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v8.2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -610,6 +610,8 @@ Copyright XXXX The Azax Corporation
                             }
                             else {
 
+                                //Update 2023-02-03: no longer sending interval, just number of steps available
+                                /*
                                 var dates = e.data;
                                 var datesArray = dates.split(';');
 
@@ -617,7 +619,8 @@ Copyright XXXX The Azax Corporation
                                 var begin_date_final = begin_date_tmp.trimStart();                                
 
                                 var end_date_tmp = datesArray[1].replace('"', ' ');                                
-                                var end_date_final = end_date_tmp.trimEnd();                                
+                                var end_date_final = end_date_tmp.trimEnd();
+                                */
 
                                 //Get time since epoc
                                 //let begin_date = Date.parse(begin_date_final);
@@ -632,7 +635,7 @@ Copyright XXXX The Azax Corporation
                                 //console.log(getDateTimeStringFromDate(new Date(mid_date)));
 
                                 //console.log('Requesting newest data');
-                                theWebsocket.send(end_date_final); //Send request!
+                                //theWebsocket.send(end_date_final); //Send request!
                             }
 
                         };
@@ -644,8 +647,8 @@ Copyright XXXX The Azax Corporation
                     }
 
                     //Start interval
-                    theIntervalID = window.setInterval(sendKToServer, 6000);
-                    //theIntervalID = window.setInterval(sendRequestForMostRecentDataToServer, 6000);
+                    //theIntervalID = window.setInterval(sendKToServer, 6000);
+                    theIntervalID = window.setInterval(sendRequestForMostRecentDataToServer, 5000);
                 }
                 
             }
@@ -1405,8 +1408,11 @@ Copyright XXXX The Azax Corporation
                 //Socket not connected yet...
             }
             else {
-                
-                theWebsocket.send(getDateTimeStringFromDate(new Date()));
+
+                //Sending a very large number will trigger the server to send the latest data
+                //theWebsocket.send(getDateTimeStringFromDate(new Date()));
+                let aLargeNumber = '10000000000';                
+                theWebsocket.send(aLargeNumber);
             }
 
         }

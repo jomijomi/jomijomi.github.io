@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - V10.1</title>
+    <title>three.js webgl - V10.2</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="main.css">
@@ -1114,7 +1114,11 @@
                 }
                 else {
                     //This should be the time interval, right..?
+                    //NOTE: No longer time interval, just number of stored values
                     console.log(e.data);
+                    download('test_k_new.txt', e.data);
+
+                    /*
                     var dates = e.data;
                     var datesArray = dates.split(';');
 
@@ -1161,6 +1165,7 @@
 
                     console.log('getDateTimeStringFromDate(new Date()):');
                     console.log(getDateTimeStringFromDate(new Date()));
+                    */
 
                     /*
                     toggleVar = !toggleVar;
@@ -1174,11 +1179,13 @@
                         theWebsocket.send(end_date_final);
                     }*/
 
-                    console.log('Requesting data closest to NOW');
-                    theWebsocket.send(getDateTimeStringFromDate(new Date()));
+                    //console.log('Requesting data closest to NOW');
+                    //theWebsocket.send(getDateTimeStringFromDate(new Date()));
                 }
 
+                //download('test_k_new.txt', e.data);
 
+                /*
                 if (e.data.startsWith('25-Jan-2023')) {
 
                     console.log('ALTERNATIVE 01');
@@ -1191,7 +1198,7 @@
                     console.log(e.data);
 
                     //download('test_k.txt', e.data);
-                }
+                }*/
             };
 
             theWebsocket.onerror = (e) => {
