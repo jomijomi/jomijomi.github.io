@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v8.1 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v8.2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -149,6 +149,7 @@ Copyright XXXX The Azax Corporation
         <!-- <input type="range" min="0" max="432" value="216" class="slider" id="ar_slider" style='display: none;'> -->
         <!-- <input type="range" min="0" max="44" value="22" class="slider" id="ar_slider" style='display: none;'> -->
         <input type="range" min="0" max="10" value="9" class="slider" id="ar_slider" style='display: none;'>
+        <input type="range" min="0" max="0" value="0" class="slider" id="calendar_slider" style='display: none;'>
 
         <div id="my-div-1">1</div>
         <div id="my-div-2">0</div>
@@ -398,6 +399,9 @@ Copyright XXXX The Azax Corporation
         let theIntervalID = 0;
 
         let theCalendarButton = null;
+        let isInCalendarMode = false;
+        let theCalendarSlider = null;
+        let calendarStartDate = '27-Jan-2023 12:35:15'; //just to have somethign
 
         let theWebsocket = null;
 
@@ -462,6 +466,27 @@ Copyright XXXX The Azax Corporation
             theLegendSlidersButton = document.getElementById("legend_sliders_button");
 
             theCalendarButton = document.getElementById("calendar_button");
+            theCalendarSlider = document.getElementById("calendar_slider");
+
+            theCalendarSlider.oninput = function () {
+                //console.log("theCalendarSlider.oninput");
+            }
+
+            theCalendarSlider.onchange = function () {
+
+                //console.log("theCalendarSlider.onchange");
+                let slidertime = Date.parse(calendarStartDate) + (this.value) * 60 * 1000; //time in ms from epoc
+                //console.log(getDateTimeStringFromDate(new Date(this.value)));
+                //console.log(getDateTimeStringFromDate(new Date(slidertime)));
+
+                if (theWebsocket == null) {
+                    //not connected
+                }
+                else {
+                    theWebsocket.send(getDateTimeStringFromDate(new Date(slidertime)));
+                }
+
+            }
 
             var theChartButton = document.getElementById("chart_button");
             theChartButton.style.display = 'inline-block';
@@ -572,6 +597,94 @@ Copyright XXXX The Azax Corporation
                 //render();
             }
 
+            theCalendarButton.onclick = function () {
+                if (isInCalendarMode) {
+                    //We ARE active, toggle buttons OFF
+                    theCalendarButton.style.backgroundColor = 'DodgerBlue';
+                    isInCalendarMode = false;
+                    theCalendarSlider.style.display = 'none';
+
+                    //...kill socket
+                    if (theWebsocket == null) {
+                        //No id yet...
+                    }
+                    else {
+                        theWebsocket.close();
+                        theWebsocket = null;
+                    }
+
+                } else {
+                    theCalendarButton.style.backgroundColor = '#ffbf00';
+                    isInCalendarMode = true;
+                    theCalendarSlider.style.display = 'inline-block';
+
+                    //Send k to server (server will reply with date interval)
+
+                    if (theWebsocket == null) {
+                        theWebsocket = new WebSocket('wss://129.16.160.18:50100');
+
+                        theWebsocket.onopen = (e) => {
+                            console.log('CONNECTED');
+
+                            sendKToServer(); //This will trigger sending date interval
+                        };
+
+                        theWebsocket.onclose = (e) => {
+                            console.log('DISCONNECTED');
+                            //writeToScreen("DISCONNECTED");
+                        };
+
+                        theWebsocket.onmessage = (e) => {
+                            //console.log('onmessage');
+                            if (e.data.startsWith('{')) {
+                                let theDataAsJson = JSON.parse(e.data);
+                                loadUserDataFromJSON(theDataAsJson);
+                            }
+                            else {
+
+                                var dates = e.data;
+                                var datesArray = dates.split(';');
+
+                                var begin_date_tmp = datesArray[0].replace('"', ' ');
+                                var begin_date_final = begin_date_tmp.trimStart();
+
+                                calendarStartDate = begin_date_final;
+
+                                var end_date_tmp = datesArray[1].replace('"', ' ');
+                                var end_date_final = end_date_tmp.trimEnd();
+
+                                //Get time since epoc
+                                //let begin_date = Date.parse(begin_date_final);
+                                //let end_date = Date.parse(end_date_final);
+
+                                //Can we do like this...? Yes :)
+                                //let mid_date = begin_date + (end_date - begin_date) * 0.5;
+
+                                //Create real Date object (...from epoc time)
+                                //console.log(getDateTimeStringFromDate(new Date(begin_date)));
+                                //console.log(getDateTimeStringFromDate(new Date(end_date)));
+                                //console.log(getDateTimeStringFromDate(new Date(mid_date)));
+
+                                updateSliderSettings(new Date(begin_date_final), new Date(end_date_final), 1);
+
+                                //console.log('Requesting newest data');
+                                theWebsocket.send(end_date_final); //Send request for latest!
+                            }
+
+                        };
+
+                        theWebsocket.onerror = (e) => {
+                            //console.log('onerror');
+                            //console.log(e.data);                        
+                        };
+                    }
+                }
+
+                updateColors();
+                updateLegendText();
+                render();
+            }
+
             thePlayButton.onclick = function () {
                 if (isSimulating) {
                     //We ARE active, toggle buttons OFF
@@ -618,7 +731,9 @@ Copyright XXXX The Azax Corporation
                                 var datesArray = dates.split(';');
 
                                 var begin_date_tmp = datesArray[0].replace('"', ' ');                                
-                                var begin_date_final = begin_date_tmp.trimStart();                                
+                                var begin_date_final = begin_date_tmp.trimStart();
+
+                                calendarStartDate = begin_date_final;
 
                                 var end_date_tmp = datesArray[1].replace('"', ' ');                                
                                 var end_date_final = end_date_tmp.trimEnd();                                
@@ -635,8 +750,10 @@ Copyright XXXX The Azax Corporation
                                 //console.log(getDateTimeStringFromDate(new Date(end_date)));
                                 //console.log(getDateTimeStringFromDate(new Date(mid_date)));
 
+                                updateSliderSettings(new Date(begin_date_final), new Date(end_date_final), 1);
+
                                 //console.log('Requesting newest data');
-                                theWebsocket.send(end_date_final); //Send request!
+                                theWebsocket.send(end_date_final); //Send request for latest!
                             }
 
                         };
@@ -1341,6 +1458,44 @@ Copyright XXXX The Azax Corporation
             updateColors();
             updateLegendText();
 
+        }
+
+        //startDate and endDate are real Date-objects
+        //"stepsPerMinute" is typically 1, meaning if we have 90 minutes of data, the slider has 90 steps
+        function updateSliderSettings(startDate, endDate, stepsPerMinute) {
+
+            if (theCalendarSlider == null) {
+                return;
+            }
+
+            if (startDate instanceof Date && endDate instanceof Date) {
+                //ok
+            }
+            else {
+                //console.log('updateSliderSettings: startDate or endDate is not of type Date');
+                return;
+            }
+
+
+            var diffMs = (endDate - startDate); // milliseconds between startDate & endDate            
+            var diffDays = Math.floor(diffMs / 86400000); // days            
+            var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours            
+            var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes            
+
+            var totalMinutes = diffHrs * 60 + diffMins;
+
+            //Set slider:
+            //min, max,step,value
+            theCalendarSlider.min = 0;
+            theCalendarSlider.max = totalMinutes;
+            if (diffMins >= 1) {
+                theCalendarSlider.step = 1;
+            } else {
+                theCalendarSlider.step = 0;
+            }
+
+            theCalendarSlider.value = Math.floor(totalMinutes * 0.5);
+            theCalendarSlider.value = totalMinutes;
         }
 
         function getDateTimeStringFromDate(theDate) {
