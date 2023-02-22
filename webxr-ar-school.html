@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.3 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -1469,7 +1469,10 @@ Copyright XXXX The Azax Corporation
         }
 
         function updatePositionData(theGeometry) {
-            if (contourMesh.geometry == null) {
+
+            let thisIsTrue = true;
+
+            if ((contourMesh.geometry == null) || (thisIsTrue == true)) {
                 //We need to create geometry in the first place!
                 const beam_geometry = new THREE.BufferGeometry();
 
@@ -1513,6 +1516,8 @@ Copyright XXXX The Azax Corporation
                 beam_geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
                 contourMesh.geometry = beam_geometry;
+
+                contourMesh.geometry.attributes.position.needsUpdate = true;
 
             } else {
 
