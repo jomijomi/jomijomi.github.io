@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.1 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.2 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -630,7 +630,7 @@ Copyright XXXX The Azax Corporation
                             //Is this the "results" file or the "pos" file??
                             if (theDataAsJson.obj1 !== undefined) {
 
-                                _wireframeBeam.visible = false;
+                                //_wireframeBeam.visible = false;
                                 //This is the results file
                                 loadModelFromJSON(theDataAsJson.obj1);
 
@@ -1362,6 +1362,8 @@ Copyright XXXX The Azax Corporation
             const geometry = loader.parse(theJsonObj);
             if (geometry == null)
                 return;
+
+            _wireframeBeam.visible = false;
 
             updatePositionData(geometry)
 
