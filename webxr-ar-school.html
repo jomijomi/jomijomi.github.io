@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.4 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.5 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -498,7 +498,20 @@ Copyright XXXX The Azax Corporation
             }
 
             theStrainsButton.onclick = function () {
-                if (activeChart == 1) {
+
+                if ((activeChart == 1) && (upperMesh.visible == false)) {
+                    //Activate and SHOW slider
+                    theStrainsButton.style.backgroundColor = '#ffbf00';
+                    theCracksButton.style.backgroundColor = 'DodgerBlue';
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';
+                    theLegendSlidersButton.style.display = 'inline-block';
+                    theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
+                    theSlider.style.display = 'none';
+                    showLegendSlider = false;
+                    activeChart = 1;
+                    contourMesh.visible = true;
+                    upperMesh.visible = true;
+                } else if (activeChart == 1) {
                     //We ARE active, toggle buttons OFF and HIDE slider
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
@@ -507,6 +520,7 @@ Copyright XXXX The Azax Corporation
                     showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
+                    upperMesh.visible = false;
                     _wireframeBeam.visible = true;
                 } else {
                     //Activate and SHOW slider
@@ -634,9 +648,11 @@ Copyright XXXX The Azax Corporation
                                 //_wireframeBeam.visible = false;
                                 //This is the results file
                                 loadModelFromJSON(theDataAsJson.obj1);
+                                //Should also do obj2 and obj3
 
                             } else {
                                 //We assume that this is the pos file
+                                loadUpperModelFromJSON(theDataAsJson.obj2);
                                 hasUpperLowerChartMeshPos = true;
                             }
 
@@ -807,8 +823,8 @@ Copyright XXXX The Azax Corporation
             //let W = 0.2; //In local z-dir (extrude in negative z-dir, 0 -> -0.2)
 
             //Wall size (Chalmers):
-            let L = 1.1; //In local x-dir
-            let H = 0.525; //In local y-dir
+            let L = 1.5; //In local x-dir
+            let H = 0.11; //In local y-dir
             let W = 0; //In local z-dir (extrude in negative z-dir, 0 -> -0.2)
 
             _wireframeBeam = createWireframeBeam(L, H, W);
@@ -1375,6 +1391,21 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function loadUpperModelFromJSON(theJsonObj) {
+
+            const loader = new THREE.BufferGeometryLoader();
+
+            const geometry = loader.parse(theJsonObj);
+            if (geometry == null)
+                return;            
+
+            createPositionDataUpper(geometry);
+
+            //updateUserData(geometry);
+            //updateColors();
+            //updateLegendText();
+        }
+
         function getDateTimeStringFromDate(theDate) {
 
             let yearStr = theDate.getFullYear().toString();
@@ -1469,6 +1500,55 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function createPositionDataUpper(theGeometry) {
+
+            const upper_geometry = new THREE.BufferGeometry();
+            const upper_vertices = [];
+
+            let arrayLength = theGeometry.attributes.position.array.length;
+            const positions = theGeometry.attributes.position.array;
+
+            theGeometry.computeBoundingBox();
+
+            let maxX = theGeometry.boundingBox.max.x;
+            let maxZ = theGeometry.boundingBox.max.z;
+
+            let upperOffsetX = maxX * 0.5;
+            let upperOffsetZ = maxZ;
+
+            let currentPos = 0;
+            for (let ii = 0, nn = theGeometry.attributes.position.count; ii < nn; ++ii) {
+
+                let X = positions[currentPos];
+                let Y = positions[currentPos + 1];
+                let Z = positions[currentPos + 2];
+
+                upper_vertices.push(X - upperOffsetX, Y, Z - upperOffsetZ);
+
+                currentPos += 3;
+            }
+
+            upper_geometry.setAttribute('position', new THREE.Float32BufferAttribute(upper_vertices, 3));
+
+            upper_geometry.computeVertexNormals();
+
+            // default color attribute
+            const colors = [];
+
+            for (let i = 0, n = theGeometry.attributes.position.count; i < n; ++i) {
+                //colors.push( 1, 1, 1 );
+                colors.push(1, 0, 1);
+            }
+
+            upper_geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            upperMesh.geometry = upper_geometry;
+
+            upperMesh.geometry.attributes.position.needsUpdate = true;
+            
+
+        }
+
         function updatePositionData(theGeometry) {
 
             
@@ -1528,15 +1608,15 @@ Copyright XXXX The Azax Corporation
                 
                 const positions = contourMesh.geometry.attributes.position.array;
 
-                let randomVal = (Math.random() - 0.5) * 2.0; //This is between -1 to 1
-                randomVal /= 100.0; //-1 to +1 cm
-                randomVal *= 2.0; //-2 to +2 cm
+                //let randomVal = (Math.random() - 0.5) * 2.0; //This is between -1 to 1
+                //randomVal /= 100.0; //-1 to +1 cm
+                //randomVal *= 2.0; //-2 to +2 cm
 
                 let currentPos = 0;
                 for (let ii = 0, nn = theGeometry.attributes.position.count; ii < nn; ++ii) {
 
                     positions[currentPos] = positionsNew[currentPos] - beamOffsetX; //X
-                    positions[currentPos + 1] = positionsNew[currentPos + 1] + randomVal; //Y
+                    positions[currentPos + 1] = positionsNew[currentPos + 1]; //Y
                     positions[currentPos + 2] = positionsNew[currentPos + 2] - beamOffsetZ; //Z
                     
                     currentPos += 3;
