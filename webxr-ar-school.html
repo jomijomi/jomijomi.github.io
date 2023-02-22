@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.5 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.6 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -511,6 +511,7 @@ Copyright XXXX The Azax Corporation
                     activeChart = 1;
                     contourMesh.visible = true;
                     upperMesh.visible = true;
+                    lowerMesh.visible = true;
                 } else if (activeChart == 1) {
                     //We ARE active, toggle buttons OFF and HIDE slider
                     theStrainsButton.style.backgroundColor = 'DodgerBlue';
@@ -521,6 +522,7 @@ Copyright XXXX The Azax Corporation
                     activeChart = 0;
                     contourMesh.visible = false;
                     upperMesh.visible = false;
+                    lowerMesh.visible = false;
                     _wireframeBeam.visible = true;
                 } else {
                     //Activate and SHOW slider
@@ -550,6 +552,8 @@ Copyright XXXX The Azax Corporation
                     showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
+                    upperMesh.visible = false;
+                    lowerMesh.visible = false;
                     _wireframeBeam.visible = true;
                 } else {
                     theCracksButton.style.backgroundColor = '#ffbf00';
@@ -561,6 +565,8 @@ Copyright XXXX The Azax Corporation
                     showLegendSlider = false;
                     activeChart = 2;
                     contourMesh.visible = true;
+                    upperMesh.visible = false;
+                    lowerMesh.visible = false;
                 }
                 
                 updateColors();
@@ -578,6 +584,8 @@ Copyright XXXX The Azax Corporation
                     showLegendSlider = false;
                     activeChart = 0;
                     contourMesh.visible = false;
+                    upperMesh.visible = false;
+                    lowerMesh.visible = false;
                     _wireframeBeam.visible = true;
                 } else {
                     theDefsButton.style.backgroundColor = '#ffbf00';
@@ -589,6 +597,8 @@ Copyright XXXX The Azax Corporation
                     showLegendSlider = false;
                     activeChart = 3;
                     contourMesh.visible = true;
+                    upperMesh.visible = false;
+                    lowerMesh.visible = false;
                 }
                 
                 updateColors();
@@ -652,7 +662,8 @@ Copyright XXXX The Azax Corporation
 
                             } else {
                                 //We assume that this is the pos file
-                                loadUpperModelFromJSON(theDataAsJson.obj2);
+                                loadUpperModelFromJSON(theDataAsJson.obj3);
+                                loadLowerModelFromJSON(theDataAsJson.obj2);
                                 hasUpperLowerChartMeshPos = true;
                             }
 
@@ -1406,6 +1417,21 @@ Copyright XXXX The Azax Corporation
             //updateLegendText();
         }
 
+        function loadLowerModelFromJSON(theJsonObj) {
+
+            const loader = new THREE.BufferGeometryLoader();
+
+            const geometry = loader.parse(theJsonObj);
+            if (geometry == null)
+                return;
+
+            createPositionDataLower(geometry);
+
+            //updateUserData(geometry);
+            //updateColors();
+            //updateLegendText();
+        }
+
         function getDateTimeStringFromDate(theDate) {
 
             let yearStr = theDate.getFullYear().toString();
@@ -1545,6 +1571,55 @@ Copyright XXXX The Azax Corporation
             upperMesh.geometry = upper_geometry;
 
             upperMesh.geometry.attributes.position.needsUpdate = true;
+
+
+        }
+
+        function createPositionDataLower(theGeometry) {
+
+            const lower_geometry = new THREE.BufferGeometry();
+            const lower_vertices = [];
+
+            let arrayLength = theGeometry.attributes.position.array.length;
+            const positions = theGeometry.attributes.position.array;
+
+            theGeometry.computeBoundingBox();
+
+            let maxX = theGeometry.boundingBox.max.x;
+            let maxZ = theGeometry.boundingBox.max.z;
+
+            let lowerOffsetX = maxX * 0.5;
+            let lowerOffsetZ = maxZ;
+
+            let currentPos = 0;
+            for (let ii = 0, nn = theGeometry.attributes.position.count; ii < nn; ++ii) {
+
+                let X = positions[currentPos];
+                let Y = positions[currentPos + 1];
+                let Z = positions[currentPos + 2];
+
+                lower_vertices.push(X - lowerOffsetX, Y, Z - lowerOffsetZ);
+
+                currentPos += 3;
+            }
+
+            lower_geometry.setAttribute('position', new THREE.Float32BufferAttribute(lower_vertices, 3));
+
+            lower_geometry.computeVertexNormals();
+
+            // default color attribute
+            const colors = [];
+
+            for (let i = 0, n = theGeometry.attributes.position.count; i < n; ++i) {
+                //colors.push( 1, 1, 1 );
+                colors.push(1, 1, 0);
+            }
+
+            lower_geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            lowerMesh.geometry = lower_geometry;
+
+            lowerMesh.geometry.attributes.position.needsUpdate = true;
             
 
         }
