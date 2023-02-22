@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.6 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.7 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -659,6 +659,8 @@ Copyright XXXX The Azax Corporation
                                 //This is the results file
                                 loadModelFromJSON(theDataAsJson.obj1);
                                 //Should also do obj2 and obj3
+                                updateUpperModelFromJSON(theDataAsJson.obj3);
+                                updateLowerModelFromJSON(theDataAsJson.obj2);
 
                             } else {
                                 //We assume that this is the pos file
@@ -1402,6 +1404,34 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function updateUpperModelFromJSON(theJsonObj) {
+
+            const loader = new THREE.BufferGeometryLoader();
+
+            const geometry = loader.parse(theJsonObj);
+            if (geometry == null)
+                return;
+            
+            updateUserDataUpper(geometry);
+
+            updateColorsUpper();
+            updateLegendText();
+        }
+
+        function updateLowerModelFromJSON(theJsonObj) {
+
+            const loader = new THREE.BufferGeometryLoader();
+
+            const geometry = loader.parse(theJsonObj);
+            if (geometry == null)
+                return;
+
+            updateUserDataLower(geometry);
+
+            updateColorsLower();
+            updateLegendText();
+        }
+
         function loadUpperModelFromJSON(theJsonObj) {
 
             const loader = new THREE.BufferGeometryLoader();
@@ -1792,6 +1822,52 @@ Copyright XXXX The Azax Corporation
 
         }
 
+        function updateUserDataUpper(theGeometry) {
+
+            //EPS_MAX
+            const eps_max = theGeometry.userData.strains;
+            if (eps_max == null) {
+                //console.log('eps_max is null!');
+                //return;
+            }
+            else {
+                //console.log('eps_max.length:', eps_max.length);
+                //let randomVal = Math.random() * 1000.0; //If null, we replace with this
+                for (let i = 0; i < eps_max.length; i++) {
+                    if (eps_max[i] == null)
+                        eps_max[i] = 0.0;
+                }
+
+                //Can we really do like this..?
+                upperMesh.geometry.userData.strains = eps_max;
+
+            }
+            
+        }
+
+        function updateUserDataLower(theGeometry) {
+
+            //EPS_MAX
+            const eps_max = theGeometry.userData.strains;
+            if (eps_max == null) {
+                //console.log('eps_max is null!');
+                //return;
+            }
+            else {
+                //console.log('eps_max.length:', eps_max.length);
+                //let randomVal = Math.random() * 1000.0; //If null, we replace with this
+                for (let i = 0; i < eps_max.length; i++) {
+                    if (eps_max[i] == null)
+                        eps_max[i] = 0.0;
+                }
+
+                //Can we really do like this..?
+                lowerMesh.geometry.userData.strains = eps_max;
+
+            }
+
+        }
+
         //This is typically what we get from the WebSocket "stream"
         function updateUserData(theGeometry) {
 
@@ -1803,10 +1879,10 @@ Copyright XXXX The Azax Corporation
             }
             else {
                 //console.log('eps_max.length:', eps_max.length);
-                let randomVal = Math.random() * 1000.0; //If null, we replace with this
+                //let randomVal = Math.random() * 1000.0; //If null, we replace with this
                 for (let i = 0; i < eps_max.length; i++) {
                     if (eps_max[i] == null)
-                        eps_max[i] = randomVal;
+                        eps_max[i] = 0.0;
                 }
 
                 //Can we really do like this..?
@@ -1823,10 +1899,10 @@ Copyright XXXX The Azax Corporation
             else {
                 //console.log('eps_min.length:', eps_min.length);
 
-                let randomVal = Math.random() * 1.0; //If null, we replace with this
+                //let randomVal = Math.random() * 1.0; //If null, we replace with this
                 for (let i = 0; i < eps_min.length; i++) {
                     if (eps_min[i] == null)
-                        eps_min[i] = randomVal;
+                        eps_min[i] = 0.0;
                 }
 
                 //Can we really do like this..?
@@ -1842,10 +1918,10 @@ Copyright XXXX The Azax Corporation
             else {
                 //console.log('eta_xy.length:', eta_xy.length);
 
-                let randomVal = Math.random() * 5.0; //If null, we replace with this
+                //let randomVal = Math.random() * 5.0; //If null, we replace with this
                 for (let i = 0; i < eta_xy.length; i++) {
                     if (eta_xy[i] == null)
-                        eta_xy[i] = randomVal;
+                        eta_xy[i] = 0.0;
                 }
 
                 //Can we really do like this..?
@@ -1874,8 +1950,8 @@ Copyright XXXX The Azax Corporation
             if (activeChart == 1) {
                 //lut.setMax(1327);
                 //lut.setMin(-647);
-                lut.setMax(eps_max_legend_val);
-                lut.setMin(0.0);
+                //lut.setMax(eps_max_legend_val);
+                //lut.setMin(0.0);
 
                 pressures = strains;
             } else {
@@ -1924,14 +2000,15 @@ Copyright XXXX The Azax Corporation
             }
 
             //Only update if activeChart == 1 (strains)
-
-
+            //Have one "global" legend min/max for strains
+            
             let pressures = null;
             if (activeChart == 1) {
                 //lut.setMax(1327);
                 //lut.setMin(-647);
-                lut.setMax(eps_max_legend_val);
-                lut.setMin(0.0);
+
+                //lut.setMax(eps_max_legend_val);
+                //lut.setMin(0.0);
 
                 pressures = strains;
             } else {
