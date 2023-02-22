@@ -129,7 +129,7 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v9.3 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v9.4 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -381,6 +381,7 @@ Copyright XXXX The Azax Corporation
         let contourMesh = null; //This is the BEAM mesh
         let upperMesh = null; //UPPER plot mesh
         let lowerMesh = null; //LOWER plot mesh
+        let hasCreatedContourGeometry = false;
 
         let _wireframeBeam = null;
 
@@ -1470,9 +1471,9 @@ Copyright XXXX The Azax Corporation
 
         function updatePositionData(theGeometry) {
 
-            let thisIsTrue = true;
+            
 
-            if ((contourMesh.geometry == null) || (thisIsTrue == true)) {
+            if (hasCreatedContourGeometry == false) {
                 //We need to create geometry in the first place!
                 const beam_geometry = new THREE.BufferGeometry();
 
@@ -1519,17 +1520,23 @@ Copyright XXXX The Azax Corporation
 
                 contourMesh.geometry.attributes.position.needsUpdate = true;
 
+                hasCreatedContourGeometry = true;
+
             } else {
 
                 const positionsNew = theGeometry.attributes.position.array;
                 
                 const positions = contourMesh.geometry.attributes.position.array;
 
+                let randomVal = (Math.random() - 0.5) * 2.0; //This is between -1 to 1
+                randomVal /= 100.0; //-1 to +1 cm
+                randomVal *= 2.0; //-2 to +2 cm
+
                 let currentPos = 0;
                 for (let ii = 0, nn = theGeometry.attributes.position.count; ii < nn; ++ii) {
 
                     positions[currentPos] = positionsNew[currentPos] - beamOffsetX; //X
-                    positions[currentPos + 1] = positionsNew[currentPos + 1]; //Y
+                    positions[currentPos + 1] = positionsNew[currentPos + 1] + randomVal; //Y
                     positions[currentPos + 2] = positionsNew[currentPos + 2] - beamOffsetZ; //Z
                     
                     currentPos += 3;
