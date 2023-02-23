@@ -129,7 +129,9 @@ Copyright XXXX The Azax Corporation
 <body>
     <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='display: none;' />
     <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='display: none;' />
-    <p><b>v10.0 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <p><b>v10.1 NOTE:</b> Navigate to chrome://flags and enable webxr-incubations</p>
+    <a href="chrome://flags"> Link to Chrome settings</a>
+    <a href="https://129.16.160.18:50100">Link to server. Click once to accept custom signed cert, then come back here (No worries, this is safe!)</a>
     <!-- <img id='imgQR01' src='media/images/img-qr-01.jpg' alt='imgqr01' style='width:100px;height:100px;' /> -->
     <!-- <img id='imgQR02' src='media/images/img-qr-02.jpg' alt='imgqr02' style='width:100px;height:100px;' /> -->
     <!-- Starting an immersive WebXR session requires user interaction.
@@ -423,7 +425,7 @@ Copyright XXXX The Azax Corporation
         let eta_max_slider_val = 7;
         let eta_max_legend_val = 14.0; //eta_max_slider_val*2.0;
 
-        
+
 
         let legendTextTop = null;
         let legendTextBottom = null;
@@ -451,13 +453,13 @@ Copyright XXXX The Azax Corporation
                 //currentSensorIdx = this.value;
                 if (activeChart == 1) {
                     eps_max_slider_val = this.value;
-                    eps_max_legend_val = eps_max_slider_val*300.0;                    
+                    eps_max_legend_val = eps_max_slider_val * 300.0;
                 } else if (activeChart == 2) {
                     eps_min_slider_val = this.value;
-                    eps_min_legend_val = eps_min_slider_val/10.0;
+                    eps_min_legend_val = eps_min_slider_val / 10.0;
                 } else if (activeChart == 3) {
                     eta_max_slider_val = this.value;
-                    eta_max_legend_val = eta_max_slider_val*2.0;
+                    eta_max_legend_val = eta_max_slider_val * 2.0;
                 }
 
                 updateColors();
@@ -465,7 +467,7 @@ Copyright XXXX The Azax Corporation
                     updateColorsUpper();
                     updateColorsLower();
                 }
-                updateLegendText();                
+                updateLegendText();
             }
 
             theStrainsButton = document.getElementById("strains_button");
@@ -483,24 +485,24 @@ Copyright XXXX The Azax Corporation
                 if (showLegendSlider) {
                     //We ARE active, toggle buttons OFF and HIDE slider
                     theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
-                    theSlider.style.display = 'none';   
+                    theSlider.style.display = 'none';
                     showLegendSlider = false;
                 } else {
                     //Activate and SHOW slider
-                    theLegendSlidersButton.style.backgroundColor = '#ffbf00';                    
+                    theLegendSlidersButton.style.backgroundColor = '#ffbf00';
                     theSlider.style.display = 'inline-block';
 
                     if (activeChart == 1) {
-                        theSlider.value = eps_max_slider_val;                        
+                        theSlider.value = eps_max_slider_val;
                     } else if (activeChart == 2) {
-                        theSlider.value = eps_min_slider_val;                        
+                        theSlider.value = eps_min_slider_val;
                     } else if (activeChart == 3) {
-                        theSlider.value = eta_max_slider_val;                        
+                        theSlider.value = eta_max_slider_val;
                     }
 
                     showLegendSlider = true;
                 }
-                
+
             }
 
             theStrainsButton.onclick = function () {
@@ -534,7 +536,7 @@ Copyright XXXX The Azax Corporation
                     //Activate and SHOW slider
                     theStrainsButton.style.backgroundColor = '#ffbf00';
                     theCracksButton.style.backgroundColor = 'DodgerBlue';
-                    theDefsButton.style.backgroundColor = 'DodgerBlue';                    
+                    theDefsButton.style.backgroundColor = 'DodgerBlue';
                     theLegendSlidersButton.style.display = 'inline-block';
                     theLegendSlidersButton.style.backgroundColor = 'DodgerBlue';
                     theSlider.style.display = 'none';
@@ -542,7 +544,7 @@ Copyright XXXX The Azax Corporation
                     activeChart = 1;
                     contourMesh.visible = true;
                 }
-                
+
                 updateColors();
                 updateColorsUpper();
                 updateColorsLower();
@@ -576,7 +578,7 @@ Copyright XXXX The Azax Corporation
                     upperMesh.visible = false;
                     lowerMesh.visible = false;
                 }
-                
+
                 updateColors();
                 updateLegendText();
                 //render();
@@ -608,7 +610,7 @@ Copyright XXXX The Azax Corporation
                     upperMesh.visible = false;
                     lowerMesh.visible = false;
                 }
-                
+
                 updateColors();
                 updateLegendText();
                 //render();
@@ -618,7 +620,7 @@ Copyright XXXX The Azax Corporation
                 if (isSimulating) {
                     //We ARE active, toggle buttons OFF
                     thePlayButton.style.backgroundColor = 'DodgerBlue';
-                    isSimulating = false;                    
+                    isSimulating = false;
                     //Stop interval...
                     window.clearInterval(theIntervalID);
 
@@ -686,14 +688,14 @@ Copyright XXXX The Azax Corporation
                                 loadUserDataFromJSON(theDataAsJson);
                             }
                             else {
-                                
+
                             }*/
 
                         };
 
                         theWebsocket.onerror = (e) => {
                             //console.log('onerror');
-                            //console.log(e.data);                        
+                            //console.log(e.data);
                         };
                     }
 
@@ -701,7 +703,7 @@ Copyright XXXX The Azax Corporation
                     //theIntervalID = window.setInterval(sendKToServer, 6000);
                     theIntervalID = window.setInterval(sendRequestForMostRecentDataToServer, 5000);
                 }
-                
+
             }
 
             theChartButton.onclick = function () {
@@ -1387,7 +1389,7 @@ Copyright XXXX The Azax Corporation
             }
 
             const geometry = new THREE.BufferGeometry();
-            geometry.userData = theJsonObj.userData;            
+            geometry.userData = theJsonObj.userData;
 
             updateUserData(geometry);
             updateColors();
@@ -1396,7 +1398,7 @@ Copyright XXXX The Azax Corporation
 
         function loadModelFromJSON(theJsonObj) {
 
-            
+
             const loader = new THREE.BufferGeometryLoader();
 
             const geometry = loader.parse(theJsonObj);
@@ -1422,7 +1424,7 @@ Copyright XXXX The Azax Corporation
             const geometry = loader.parse(theJsonObj);
             if (geometry == null)
                 return;
-            
+
             updateUserDataUpper(geometry);
             */
             updateUserDataUpper(theJsonObj);
@@ -1455,7 +1457,7 @@ Copyright XXXX The Azax Corporation
 
             const geometry = loader.parse(theJsonObj);
             if (geometry == null)
-                return;            
+                return;
 
             createPositionDataUpper(geometry);
 
@@ -1545,7 +1547,7 @@ Copyright XXXX The Azax Corporation
                 //Socket not connected yet...
             }
             else {
-                //Sending something other that 'pos' trigger the server to send the latest data                
+                //Sending something other that 'pos' trigger the server to send the latest data
                 let aOther = 'other';
                 theWebsocket.send(aOther);
             }
@@ -1559,10 +1561,10 @@ Copyright XXXX The Azax Corporation
             }
             else {
 
-                let aK = 'pos';                
+                let aK = 'pos';
                 theWebsocket.send(aK);
             }
-            
+
         }
 
         function simulateWebsocketReceive() {
@@ -1667,13 +1669,13 @@ Copyright XXXX The Azax Corporation
             lowerMesh.geometry = lower_geometry;
 
             lowerMesh.geometry.attributes.position.needsUpdate = true;
-            
+
 
         }
 
         function updatePositionData(theGeometry) {
 
-            
+
 
             if (hasCreatedContourGeometry == false) {
                 //We need to create geometry in the first place!
@@ -1727,7 +1729,7 @@ Copyright XXXX The Azax Corporation
             } else {
 
                 const positionsNew = theGeometry.attributes.position.array;
-                
+
                 const positions = contourMesh.geometry.attributes.position.array;
 
                 //let randomVal = (Math.random() - 0.5) * 2.0; //This is between -1 to 1
@@ -1740,7 +1742,7 @@ Copyright XXXX The Azax Corporation
                     positions[currentPos] = positionsNew[currentPos] - beamOffsetX; //X
                     positions[currentPos + 1] = positionsNew[currentPos + 1]; //Y
                     positions[currentPos + 2] = positionsNew[currentPos + 2] - beamOffsetZ; //Z
-                    
+
                     currentPos += 3;
                 }
 
@@ -1775,14 +1777,14 @@ Copyright XXXX The Azax Corporation
                     let X = positions[currentPos];
                     //let Y = positions[currentPos + 1];
                     //let Z = positions[currentPos + 2];
-                   
-                    positions[currentPos] = X*(-1.0);                    
+
+                    positions[currentPos] = X * (-1.0);
 
                     currentPos += 3;
                 }
 
                 geometry.attributes.position.needsUpdate = true;
-                
+
                 geometry.computeBoundingBox();
                 console.log('1: geometry.boundingBox: ', geometry.boundingBox);
 
@@ -1861,7 +1863,7 @@ Copyright XXXX The Azax Corporation
                 upperMesh.geometry.userData.strains = eps_max;
 
             }
-            
+
         }
 
         function updateUserDataLower(theGeometry) {
@@ -1906,7 +1908,7 @@ Copyright XXXX The Azax Corporation
 
                 //Can we really do like this..?
                 contourMesh.geometry.userData.strains = eps_max;
-                
+
             }
 
             //EPS_MIN
@@ -1963,7 +1965,7 @@ Copyright XXXX The Azax Corporation
             }
 
             //Only update if activeChart == 1 (strains)
-            
+
 
             let pressures = null;
             if (activeChart == 1) {
@@ -1975,7 +1977,7 @@ Copyright XXXX The Azax Corporation
                 pressures = strains;
             } else {
                 return;
-            } 
+            }
 
             const colors = geometry.attributes.color;
 
@@ -2004,9 +2006,9 @@ Copyright XXXX The Azax Corporation
                 }
 
             }
-            
 
-            colors.needsUpdate = true;            
+
+            colors.needsUpdate = true;
         }
 
         function updateColorsLower() {
@@ -2021,7 +2023,7 @@ Copyright XXXX The Azax Corporation
 
             //Only update if activeChart == 1 (strains)
             //Have one "global" legend min/max for strains
-            
+
             let pressures = null;
             if (activeChart == 1) {
                 //lut.setMax(1327);
@@ -2076,11 +2078,11 @@ Copyright XXXX The Azax Corporation
                 //console.log('strains is null!');
                 return;
             }
-            
+
             const cracks = geometry.userData.cracks;
             const defs = geometry.userData.defs;
             //const time = geometry.userData.time;
-            
+
             let pressures = null;
             if (activeChart == 0) {
                 lut.setMax(10);
@@ -2094,7 +2096,7 @@ Copyright XXXX The Azax Corporation
                 colors0.needsUpdate = true;
                 return;
 
-            } else if (activeChart == 1) {                
+            } else if (activeChart == 1) {
                 //lut.setMax(1327);
                 //lut.setMin(-647);
                 lut.setMax(eps_max_legend_val);
@@ -2102,14 +2104,14 @@ Copyright XXXX The Azax Corporation
                 lut.setMin(-eps_max_legend_val);
 
                 pressures = strains;
-            } else if (activeChart == 2) {                
+            } else if (activeChart == 2) {
                 //lut.setMax(0.68);
                 //lut.setMin(0.0); //clamp
                 lut.setMax(eps_min_legend_val); //clamp
                 lut.setMin(0.0); //negative!
 
                 pressures = cracks;
-            } else if (activeChart == 3) {                
+            } else if (activeChart == 3) {
                 //As negative:
                 //lut.setMax(0.0); //clamp
                 //lut.setMin(-4.52); //negate
@@ -2122,13 +2124,13 @@ Copyright XXXX The Azax Corporation
 
 
             //date_time = time[currentSensorIdx];
-            
-            for (let i = 0; i < pressures.length; i++) {                
+
+            for (let i = 0; i < pressures.length; i++) {
                 let colorValue = 0.0;
                 //if (activeChart == 3) {
                 //    colorValue = -pressures[i]; //negate deflection so its similar as the Matlab plots
                 //} else {
-                    colorValue = pressures[i];
+                colorValue = pressures[i];
                 //}
 
                 const color = lut.getColor(colorValue);
