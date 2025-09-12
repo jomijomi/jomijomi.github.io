@@ -82,13 +82,13 @@
     <!--[if lt IE 9]>
     <script src='https://html5shiv.googlecode.com/svn/trunk/html5.js'></script>
     <![endif]-->
-    <title>WebXR - Samples</title>
+    <title>WebGL|WebXR - Samples</title>
   </head>
   <body>
 
     <div class='container' id='container'>
       <header class='header'>        
-        <h2 class='tagline'>WebXR Samples</h2>
+        <h2 class='tagline'>WebGL|WebXR Samples</h2>
       </header>
 
       <main class='main' id='main'>
@@ -115,12 +115,18 @@
           }
         </script>
 
-        <p><b>Sample pages with different WebXR tests.</b><br/></p>       
+        <p><b>Sample pages with different WebGL and WebXR tests.</b><br/></p>       
 
         <script>
           let pages = [
-            { title: 'IFC files in VR', category: 'VR',
-              path: 'webxr-vr-1.html',
+            { title: 'Simple BIM viewer', category: 'Desktop',
+              path: 'simple-viewer-1.html',
+                  description: 'Very basic 3D viewer that can import IFC files.'
+              },
+
+              {
+                  title: 'IFC files in VR', category: 'VR',
+                  path: 'webxr-vr-1.html',
                   description: 'Browser sample for Oculus Quest (2) - immersive.'
               },
 

@@ -1,0 +1,460 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>That Open – IFC demo</title>
+  <style>
+      *, *::before, *::after {
+          box-sizing: border-box;
+      }
+      html, body {
+          height: 100%;
+          margin: 0;
+          min-width: 0;
+          font: 14px/1.4 system-ui, sans-serif;
+      }
+    /*#app { position:fixed; inset:0; display:grid; grid-template-columns: 1fr 320px; }*/
+    /*#viewport { position:relative; background:#0b0f14; }*/
+      #viewport {
+          background: #0b0f14;
+          min-width: 0;
+      }
+    /*#ui { border-left:1px solid #1f2a35; background:#0f151c; color:#cfe3ff; overflow:auto; }*/
+    #toolbar { display:flex; gap:8px; padding:10px; position:absolute; left:10px; top:10px; z-index:10;
+               background:#101821cc; border:1px solid #1f2a35; border-radius:10px; backdrop-filter: blur(4px); }
+    #file { display:none; }
+    .btn { cursor:pointer; padding:8px 10px; border:1px solid #2b3a4a; border-radius:8px; background:#13202e; color:#d7e7ff; }
+    .btn:hover { background:#14293a; }
+    #props { padding:16px; }
+    .pset { margin:0 0 12px 0; border:1px solid #213142; border-radius:10px; overflow:hidden; }
+    .pset h3 { margin:0; padding:8px 10px; background:#102030; font-size:13px; }
+    .prop { display:flex; gap:8px; padding:6px 10px; border-top:1px solid #1b2a3a; }
+    .prop .k { opacity:.8; min-width:120px; }
+      /* Base layout (desktop): right sidebar */
+      #app {
+          position: fixed;
+          inset: 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) clamp(260px, 32vw, 320px);
+          grid-template-rows: minmax(0, 1fr);
+      }
+
+      #ui {
+          border-left: 1px solid #1f2a35;
+          background: #0f151c;
+          color: #cfe3ff;
+          overflow: auto; /* scroll inside the panel if needed */
+          width: auto; /* IMPORTANT: let the grid control width */
+          max-width: none; /* don’t lock width */
+          min-width: 0; /* allow it to shrink */
+      }
+
+      /* Narrow screens: convert sidebar into a bottom drawer */
+      @media (max-width: 900px) {
+          #app {
+              grid-template-columns: 1fr;
+              grid-template-rows: minmax(0, 1fr) min(40vh, 340px);
+          }
+
+          #viewport {
+              grid-row: 1;
+              grid-column: 1;
+          }
+
+          #ui {
+              grid-row: 2;
+              grid-column: 1;
+              border-left: none;
+              border-top: 1px solid #1f2a35;
+              width: 100%;
+              height: 100%;
+              max-width: none;
+              min-width: 0;
+              overflow: auto;
+          }
+      }
+
+      /* Optional: for very short windows, clamp the drawer a bit higher */
+      @media (max-height: 600px) and (max-width: 900px) {
+          #app {
+              grid-template-rows: minmax(0, 1fr) min(50vh, 280px);
+          }
+      }
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="viewport">
+        <div id="toolbar">
+            <label class="btn" for="file">Open IFC…</label>
+            <input id="file" type="file" accept=".ifc,.ifczip" />
+            <button id="clearSel" class="btn">Clear selection</button>
+            <button id="resetView" class="btn">Reset view</button>
+        </div>
+      <div id="container" style="position:absolute; inset:0;"></div>
+    </div>
+    <div id="ui">
+      <div id="props">
+        <h2 style="margin-top:12px;">Properties</h2>
+        <p>Click an element to view <b>Quantities</b> and <b>Information</b>.</p>
+        <div id="psets"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    
+      //import * as OBC from "https://cdn.jsdelivr.net/npm/@thatopen/components@2/+esm";
+      //import * as OBF from "https://cdn.jsdelivr.net/npm/@thatopen/components-front@2/+esm";      
+      // Use the package’s ESM file directly (unpkg), not jsDelivr +esm
+      //import * as FRAGS from "https://unpkg.com/@thatopen/fragments@2.8.3/dist/index.mjs";
+
+      //import * as OBC from "https://cdn.jsdelivr.net/npm/@thatopen/components@2.11.3/+esm";
+      //import * as OBF from "https://cdn.jsdelivr.net/npm/@thatopen/components-front@2.4.2/+esm";
+
+      //import * as FRAGS from "https://cdn.jsdelivr.net/npm/@thatopen/fragments@2.8.3/dist/index.mjs";
+
+      // Components core + frontend helpers
+      import * as OBC from "https://cdn.jsdelivr.net/npm/@thatopen/components@3.1.3/+esm";      
+      import * as OBF from "https://cdn.jsdelivr.net/npm/@thatopen/components-front@3.1.7/+esm";
+      
+      // Fragments (use esm.sh here because jsDelivr’s +esm wrapper can be odd for this package)
+      import * as FRAGS from "https://esm.sh/@thatopen/fragments@3.1.7";      
+      import * as WebIFC from "https://cdn.jsdelivr.net/npm/web-ifc@0.0.71/web-ifc-api.js";
+
+      //import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/+esm";
+
+
+
+
+      //Raggar-lösning med att läsa in Properties separat:
+      // WebIFC API used to read properties directly from the IFC
+      const ifcApi = new WebIFC.IfcAPI();
+      // point WebIFC to the CDN copy of the wasm (note trailing slash)
+      ifcApi.SetWasmPath("https://cdn.jsdelivr.net/npm/web-ifc@0.0.71/", true);
+      await ifcApi.Init();
+      let webIfcModelID = null;     // web-ifc model handle currently opened
+      let ifcBytesCache = null;     // keep last IFC bytes so we can close/dispose on reload
+
+      let theGrid = null; //DALMAN
+      let theBox = null; //DALMAN
+
+      // --- World (scene, camera, renderer) -------------------------------------
+    const components = new OBC.Components();
+    const worlds = components.get(OBC.Worlds);
+    const world = worlds.create(
+      OBC.SimpleScene,
+      OBC.OrthoPerspectiveCamera,
+      OBF.PostproductionRenderer
+    );
+
+    // Scene + renderer in the right div
+    world.scene = new OBC.SimpleScene(components);
+    world.scene.setup();
+    world.scene.three.background = null;
+
+    // Renderer (binds to your #container)
+    world.renderer = new OBF.PostproductionRenderer(components, document.getElementById("container"));
+
+    // Camera
+    world.camera = new OBC.OrthoPerspectiveCamera(components);
+
+    // Orbit navigation
+    // Initial orbit-style view (no setNavigationMode needed)
+    //await world.camera.setNavigationMode(new OBC.OrbitMode()); // 3D orbit mode
+    await world.camera.controls.setLookAt(20, 15, 25, 0, 0, 0); // pos -> target
+
+    // Start the engine AFTER wiring scene/renderer/camera
+    // make it go
+    components.init();
+
+    // Optional grid
+    theGrid = components.get(OBC.Grids).create(world);
+
+    // --- Fragments core (worker) ---------------------------------------------
+    // For a real app, copy the worker to your app and serve locally.
+    const workerUrl = URL.createObjectURL(
+      new File([await (await fetch("https://thatopen.github.io/engine_fragment/resources/worker.mjs")).blob()],
+      "worker.mjs", { type: "text/javascript" })
+      );
+
+    
+    // FragmentsManager from Components (OBC)
+    const fragments = components.get(OBC.FragmentsManager);
+    fragments.init(workerUrl);
+
+    
+    // keep Fragments' internal buffers updated with camera changes
+    world.camera.controls.addEventListener("rest", () => fragments.core.update(true));
+
+    world.onCameraChanged.add((camera) => {
+        for (const [, model] of fragments.list) model.useCamera(camera.three);
+        fragments.core.update(true);
+    });
+
+    // when a model is registered, add it to the scene
+    fragments.list.onItemSet.add(({ value: model }) => {
+        model.useCamera(world.camera.three);
+        world.scene.three.add(model.object);
+        fragments.core.update(true);
+    });
+
+    // --- Raycasting + Highlighter (click to select) --------------------------
+    // Raycaster bound to this world
+    components.get(OBC.Raycasters).get(world);
+
+    const highlighter = components.get(OBF.Highlighter);
+    highlighter.setup({
+      world,        
+        selectMaterialDefinition: { color: new THREE.Color("#bcf124"), opacity: 1, transparent: false, renderedFaces: 0 }       
+      });
+
+      
+
+    // --- Load IFC from disk -> convert -> show --------------------------------
+    const fileInput = document.getElementById("file");
+    fileInput.addEventListener("change", onOpenIfc);
+
+    // IfcImporter converts IFC bytes -> Fragments bytes in the browser.
+    const importer = new FRAGS.IfcImporter();
+    // Set the web-ifc WASM path (from the official docs demo)
+    //importer.wasm = { absolute: true, path: "https://unpkg.com/web-ifc@0.0.69/" }; // :contentReference[oaicite:0]{index=0}
+      importer.wasm = { absolute: true, path: "https://cdn.jsdelivr.net/npm/web-ifc@0.0.71/" };
+
+    async function onOpenIfc(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Ifc -> Fragments (ArrayBuffer)
+      
+
+     // Convert IFC -> Fragments bytes (unchanged)
+    const ifcBytes = new Uint8Array(await file.arrayBuffer());
+    ifcBytesCache = ifcBytes; //Raggar-IFC-props
+
+    //Close previous web - ifc model if any (Raggar-IFC-Props)
+    if (webIfcModelID !== null) {
+                try { ifcApi.CloseModel(webIfcModelID); } catch { }
+                webIfcModelID = null;
+    }
+
+    //Open in web-ifc so we can read property sets later (Raggar-IFC-Props)
+    webIfcModelID = ifcApi.OpenModel(ifcBytes, {
+        // you can pass IFC load settings here if needed
+    });
+
+     const fragBytes = await importer.process({
+         bytes: ifcBytes,
+         progressCallback: (p) => console.log("IFC→Fragments", Math.round(p * 100) + "%")
+     });
+
+      
+
+      // Load via the initialized FragmentsManager
+      const modelId = file.name.replace(/\.(ifc|ifczip)$/i, "");
+      await fragments.core.load(fragBytes, { modelId });
+      fragments.core.update(true);
+
+      // Fit view
+      const boxer = components.get(OBC.BoundingBoxer);
+      
+
+        boxer.list.clear();
+        boxer.addFromModels();                 // or boxer.addFromModelIdMap(selection)
+        const box = boxer.get();               // <-- returns a THREE.Box3
+        theBox = box.clone();
+        await world.camera.controls.fitToBox(box, true);
+        boxer.list.clear();
+        theGrid.three.position.y = theBox.min.y;
+        console.log("Scene BoundingBox min max:");
+        console.log(theBox.min);
+        console.log(theBox.max);
+        
+    }
+
+    // --- Selection -> fetch properties -> show filtered psets -----------------
+    const psetsRoot = document.getElementById("psets");    
+
+      //FOR RAGGAR-IFC-PROPS
+      
+
+      function asId(x) {
+          // Accept shapes: 123, "123", { value: 123 }, { expressID: 123 }
+          if (x == null) return null;
+          if (typeof x === "object") {
+              if ("value" in x) return Number(x.value);
+              if ("expressID" in x) return Number(x.expressID);
+          }
+          return Number(x);
+      }
+
+
+      //FOR RAGGAR-IFC-PROPS v2
+      highlighter.events.select.onHighlight.add(async (modelIdMap) => {
+          const modelId = Object.keys(modelIdMap)[0];
+          if (!modelId) return;
+          const ids = [...modelIdMap[modelId]];
+          if (!ids.length) return;
+
+          const model = fragments.list.get(modelId);
+          if (!model) return;
+
+          // Get item data for the first selected drawcall/fragment id
+          const [item] = await model.getItemsData([ids[0]]);
+          //const expressID = item ?._localId;
+          //if (expressID == null) return;
+          const expressID = asId(item ?._localId);   // <-- normalize here
+          if (expressID == null || Number.isNaN(expressID)) return;
+
+          const psets = await getPsetsForElement(expressID);
+          renderFilteredPsetsFromWebIFC(psets);
+          
+      });
+
+
+      //FORTSÄTTER MED RAGGAR-IFC-PROPS    
+
+      // More resilient kind detection for web-ifc objects
+      function getIfcKind(def) {
+          // Primary: numeric type code
+          if (def ?.type === WebIFC.IFCPROPERTYSET) return "IFCPROPERTYSET";
+          if (def ?.type === WebIFC.IFCELEMENTQUANTITY) return "IFCELEMENTQUANTITY";
+
+          // Fallbacks: string name fields that exist in some builds
+          const n = def ?.name || def ?.constructor ?.name || "";
+          if (/IfcPropertySet$/i.test(n)) return "IFCPROPERTYSET";
+          if (/IfcElementQuantity$/i.test(n)) return "IFCELEMENTQUANTITY";
+
+          return "";
+      }
+
+
+      //FORTSÄTTER MED RAGGAR-IFC-PROPS v2      
+
+      async function getPsetsForElement(expressID) {
+          if (webIfcModelID == null) return [];
+
+          const targetId = asId(expressID);
+          const relType = WebIFC.IFCRELDEFINESBYPROPERTIES;
+          const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, relType);
+
+          const psets = [];
+          const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
+
+          for (let i = 0; i < n; i++) {
+              const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
+              if (!relID) continue;
+
+              const rel = ifcApi.GetLine(webIfcModelID, relID);
+              if (!rel || !rel.RelatedObjects || !rel.RelatingPropertyDefinition) continue;
+
+              // normalize both sides
+              const related = rel.RelatedObjects || [];
+              const isOurs = related.some(o => asId(o) === targetId);
+              if (!isOurs) continue;
+
+              const pd = rel.RelatingPropertyDefinition;
+              const def = pd ? ifcApi.GetLine(webIfcModelID, pd.value ?? pd) : null;
+              if (!def) continue;
+
+              const kind = getIfcKind(def);
+
+              if (kind === "IFCPROPERTYSET") {
+                  const name = getIfcName(def);
+                  const props = (def.HasProperties || [])
+                      .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
+                      .filter(Boolean)
+                      .map(parseIfcProperty);
+                  psets.push({ kind: "Pset", name, props });
+
+              } else if (kind === "IFCELEMENTQUANTITY") {
+                  const name = getIfcName(def);
+                  const props = (def.Quantities || [])
+                      .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
+                      .filter(Boolean)
+                      .map(parseIfcQuantity);
+                  psets.push({ kind: "Quantities", name, props });
+              } else {
+                  // Not a Pset or ElementQuantity – skip
+                  continue;
+              }
+          }
+
+          return psets;
+      }
+
+
+
+      function getIfcName(obj) {
+          return obj ?.Name ?.value ?? obj ?.Name ?? "(unnamed)";
+      }
+
+      function parseIfcProperty(prop) {
+          const name = getIfcName(prop);
+          const val = prop ?.NominalValue ?.value ?? prop ?.NominalValue ?.Value ?? "";
+          return { name, value: val };
+      }
+
+      function parseIfcQuantity(q) {
+          const name = getIfcName(q);
+          const val = q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value
+              ?? q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value
+                  ?? q ?.NominalValue ?.value ?? "";
+          const unit = q ?.Unit ?.value ?? q ?.Unit ?? "";
+          return { name, value: unit ? `${val} ${unit}` : val };
+      }
+
+
+
+    // Clear selection button
+    document.getElementById("clearSel").onclick = async () => {
+      await highlighter.clear("select");
+        psetsRoot.innerHTML = "";
+        //theGrid.three.position.y = -1000.0; //DALMAN
+        theGrid.three.position.y = theBox.min.y; //DALMAN
+      };
+
+      // Reset view button
+      document.getElementById("resetView").onclick = async () => {
+          await world.camera.controls.fitToBox(theBox, true);
+      };
+
+      
+      function renderFilteredPsetsFromWebIFC(psets) {
+          const wanted = new Set(["Quantities", "Information"]);
+          const root = document.getElementById("psets");
+          root.innerHTML = "";
+
+          //console.log(psets); //DALMAN 
+
+          for (const set of psets) {
+              const setName = set.name || set.kind || "Pset";
+              //console.log(setName); //DALMAN 
+              if (!wanted.has(setName)) continue;
+
+              const wrap = document.createElement("div");
+              wrap.className = "pset";
+              wrap.innerHTML = `<h3>${setName}</h3>`;
+              for (const p of set.props) {
+                  const val = p.value ?? "";
+                  const row = document.createElement("div");
+                  row.className = "prop";
+                  //row.innerHTML = `<div class="k">${p.name}</div><div class="v">${p.value ?? ""}</div>`;
+                  row.innerHTML = `<div class="k">${p.name}</div><div class="v">${val}</div>`;
+
+                  wrap.appendChild(row);
+              }
+              root.appendChild(wrap);
+          }
+
+          if (!root.children.length) {
+              root.innerHTML = "<p>No matching property sets on this element.</p>";
+          }
+      }
+
+  </script>
+</body>
+</html>
