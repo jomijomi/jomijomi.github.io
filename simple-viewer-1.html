@@ -54,7 +54,8 @@
       @media (max-width: 900px) {
           #app {
               grid-template-columns: 1fr;
-              grid-template-rows: minmax(0, 1fr) min(40vh, 340px);
+              /* grid-template-rows: minmax(0, 1fr) min(40vh, 340px); */
+              grid-template-rows: minmax(0, 1fr) min(30vh, 340px);
           }
 
           #viewport {
@@ -73,16 +74,16 @@
               min-width: 0;
               overflow: auto;
               z-index: 10;
-              background: #101821bb;
+              background: #00000010;
           }
       }
 
       /* Optional: for very short windows, clamp the drawer a bit higher */
-      @media (max-height: 600px) and (max-width: 900px) {
-          #app {
-              grid-template-rows: minmax(0, 1fr) min(50vh, 280px);
-          }
-      }
+              @media (max-height: 600px) and (max-width: 900px) {
+                  #app {
+                      grid-template-rows: minmax(0, 1fr) min(50vh, 280px);
+                  }
+              }
 
   </style>
 </head>
@@ -144,6 +145,65 @@
       let theGrid = null; //DALMAN
       let theBox = null; //DALMAN
 
+      let projectUnitsCache = null;
+
+      function unitSymbolFromIfcNamedUnit(u) {
+          if (!u) return "";
+          // IfcSIUnit typically: { UnitType, Name, Prefix }
+          const base = siNameToBaseSymbol(u ?.Name ?.value || u ?.Name);
+          const pref = siPrefixSymbol(u ?.Prefix ?.value || u ?.Prefix);
+          if (base) return pref + base;
+          // IfcConversionBasedUnit may have a readable Name like "inch" / "foot"
+          const human = u ?.Name ?.value || u ?.Name;
+          return human || "";
+      }
+
+      function pickUnit(units, typeKey) {
+          // typeKey: "LENGTHUNIT"|"AREAUNIT"|"VOLUMEUNIT"
+          const arr = units ?.Units || [];
+          for (const h of arr) {
+              const u = ifcApi.GetLine(webIfcModelID, asId(h));
+              const ut = String(u ?.UnitType ?.value || u ?.UnitType || "").toUpperCase();
+              if (ut === typeKey) return u;
+          }
+          return null;
+      }
+
+      function lengthSymbolFromUnits(units) {
+          return unitSymbolFromIfcNamedUnit(pickUnit(units, "LENGTHUNIT")) || "m";
+      }
+
+      function areaSymbolFromUnits(units) {
+          const area = pickUnit(units, "AREAUNIT");
+          if (area) return unitSymbolFromIfcNamedUnit(area);
+          // fallback: length²
+          return withExponent(lengthSymbolFromUnits(units), 2);
+      }
+
+      function volumeSymbolFromUnits(units) {
+          const vol = pickUnit(units, "VOLUMEUNIT");
+          if (vol) return unitSymbolFromIfcNamedUnit(vol);
+          // fallback: length³
+          return withExponent(lengthSymbolFromUnits(units), 3);
+      }
+
+      function getProjectUnits() {
+          if (projectUnitsCache) return projectUnitsCache;
+          // find first IfcProject and resolve UnitsInContext
+          const ids = ifcApi.GetLineIDsWithType(webIfcModelID, WebIFC.IFCPROJECT);
+          const id = typeof ids.get === "function" ? ids.get(0) : ids[0];
+          const proj = id ? ifcApi.GetLine(webIfcModelID, id) : null;
+          const units = proj ?.UnitsInContext ? ifcApi.GetLine(webIfcModelID, asId(proj.UnitsInContext)) : null;
+          projectUnitsCache = units || null;
+          return projectUnitsCache;
+      }
+
+      // call this whenever you open a new model to clear cache
+      function resetProjectUnitsCache() {
+          projectUnitsCache = null;
+      }
+
+
       // --- World (scene, camera, renderer) -------------------------------------
     const components = new OBC.Components();
     const worlds = components.get(OBC.Worlds);
@@ -156,7 +216,8 @@
     // Scene + renderer in the right div
     world.scene = new OBC.SimpleScene(components);
     world.scene.setup();
-    world.scene.three.background = null;
+    //world.scene.three.background = null;
+      world.scene.three.background = new THREE.Color().setHex(0x0b0f14);
 
     // Renderer (binds to your #container)
     world.renderer = new OBF.PostproductionRenderer(components, document.getElementById("container"));
@@ -246,7 +307,9 @@
     //Open in web-ifc so we can read property sets later (Raggar-IFC-Props)
     webIfcModelID = ifcApi.OpenModel(ifcBytes, {
         // you can pass IFC load settings here if needed
-    });
+        });
+
+        resetProjectUnitsCache();
 
      const fragBytes = await importer.process({
          bytes: ifcBytes,
@@ -271,9 +334,6 @@
         await world.camera.controls.fitToBox(box, true);
         boxer.list.clear();
         theGrid.three.position.y = theBox.min.y;
-        console.log("Scene BoundingBox min max:");
-        console.log(theBox.min);
-        console.log(theBox.max);
         
     }
 
@@ -313,7 +373,8 @@
 
           const psets = await getPsetsForElement(expressID);
           renderFilteredPsetsFromWebIFC(psets);
-          
+
+          //console.log(highlighter); //DALMAN
       });
 
 
@@ -394,20 +455,338 @@
           return obj ?.Name ?.value ?? obj ?.Name ?? "(unnamed)";
       }
 
+      // Resolve a symbol from an IfcUnit (IfcSIUnit / IfcConversionBasedUnit / IfcDerivedUnit / IfcMonetaryUnit)
+      function symbolFromIfcUnit(unitObj, qtyTypeName) {
+          if (!unitObj) return "";
+
+          // If this is a HANDLE, resolve it first
+          const resolved = unitObj.value != null ? ifcApi.GetLine(webIfcModelID, Number(unitObj.value)) : unitObj;
+          if (!resolved) return "";
+
+          // IfcSIUnit: { UnitType, Name, Prefix }
+          if (resolved.Name || resolved.Prefix) {
+              const base = siNameToBaseSymbol(resolved ?.Name ?.value || resolved ?.Name);
+              const pref = siPrefixSymbol(resolved ?.Prefix ?.value || resolved ?.Prefix);
+              return withExponent(pref + base, inferExponentFromQuantityKind(qtyTypeName));
+          }
+
+          // IfcConversionBasedUnit: { Name, ConversionFactor }
+          // We don’t compute the factor here; just show the human label (e.g., "inch", "foot")
+          if (resolved.Name) {
+              return String(resolved ?.Name ?.value || resolved ?.Name);
+          }
+
+          // IfcDerivedUnit: Elements = [{ Unit: Handle, Exponent: n }, ...]
+          if (Array.isArray(resolved ?.Elements)) {
+              const parts = [];
+              for (const el of resolved.Elements) {
+                  const baseSym = symbolFromIfcUnit(el.Unit, null) || "?";
+                  const exp = Number(el.Exponent ?.value ?? el.Exponent ?? 1);
+                  parts.push(exp === 1 ? baseSym : `${baseSym}${exp === 2 ? "²" : exp === 3 ? "³" : `^${exp}`}`);
+              }
+              return parts.join("·"); // e.g., "N·m⁻¹" (we don’t handle negative nicely here)
+          }
+
+          // IfcMonetaryUnit (rare for quantities): { Currency }
+          if (resolved.Currency) {
+              return String(resolved.Currency ?.value || resolved.Currency);
+          }
+
+          return "";
+      }
+
+      // When the Pset property itself defines Unit, that wins.
+      function unitSymbolFromPropertyOverride(prop, qtyTypeName, projectUnits) {
+          if (!prop ?.Unit) return "";
+          const sym = symbolFromIfcUnit(prop.Unit, qtyTypeName);
+          if (sym) return sym;
+
+          // If override exists but we failed to resolve, don’t silently fall back — try project units as a backup
+          return symbolFromProjectUnits(qtyTypeName, projectUnits);
+      }
+
+      function symbolFromProjectUnits(qtyTypeName, projectUnits) {
+          if (!projectUnits) return defaultUnitForQuantityType(qtyTypeName);
+          if (/IFCLENGTHMEASURE$/i.test(qtyTypeName)) return lengthSymbolFromUnits(projectUnits);
+          if (/IFCAREAMEASURE$/i.test(qtyTypeName)) return areaSymbolFromUnits(projectUnits);
+          if (/IFCVOLUMEMEASURE$/i.test(qtyTypeName)) return volumeSymbolFromUnits(projectUnits);
+          return defaultUnitForQuantityType(qtyTypeName);
+      }
+
+      function inferExponentFromQuantityKind(qtyTypeName) {
+          const t = String(qtyTypeName || "");
+          if (/AREA$/i.test(t)) return 2;
+          if (/VOLUME$/i.test(t)) return 3;
+          return 1;
+      }
+
+
+      //function parseIfcProperty(prop) {
+      //    const name = getIfcName(prop);
+      //    const val = prop ?.NominalValue ?.value ?? prop ?.NominalValue ?.Value ?? "";
+      //    return { name, value: val };
+      //}
+
+      //function parseIfcProperty(prop) {
+      //    const name = getIfcName(prop);
+
+      //    const nv = prop ?.NominalValue;
+      //    const raw =
+      //        nv ?.value ?? nv ?.Value ?? // some builds
+      //            null;
+
+      //    // measure type, e.g. "IFCLENGTHMEASURE" / "IFCAREAMEASURE" / "IFCVOLUMEMEASURE"
+      //    const measureType = String(nv ?.name || nv ?.constructor ?.name || nv ?.typeName || "").toUpperCase();
+
+      //    let unitSym = "";
+      //    if (measureType.includes("IFCLENGTHMEASURE")) {
+      //        unitSym = lengthSymbolFromUnits(getProjectUnits());
+      //    } else if (measureType.includes("IFCAREAMEASURE")) {
+      //        unitSym = areaSymbolFromUnits(getProjectUnits());
+      //    } else if (measureType.includes("IFCVOLUMEMEASURE")) {
+      //        unitSym = volumeSymbolFromUnits(getProjectUnits());
+      //    }
+
+      //    // Format number
+      //    const num = oneDecimal(raw);
+
+      //    // If it isn’t a number (texts, booleans, etc.), just show as-is
+      //    const isNumeric = num !== "";
+      //    const value = isNumeric
+      //        ? (unitSym ? `${num} [${unitSym}]` : `${num}`)
+      //        : (raw ?? "");
+
+      //    return { name, value };
+      //}
+
       function parseIfcProperty(prop) {
           const name = getIfcName(prop);
-          const val = prop ?.NominalValue ?.value ?? prop ?.NominalValue ?.Value ?? "";
-          return { name, value: val };
+
+          const nv = prop ?.NominalValue;
+          // numeric-like value (covers common cases)
+          const raw =
+              nv ?.value ?? nv ?.Value ?? null;
+
+          // Measure type from NominalValue (e.g., IFCLENGTHMEASURE / IFCAREAMEASURE / IFCVOLUMEMEASURE)
+          const measureType = String(nv ?.name || nv ?.constructor ?.name || nv ?.typeName || "").toUpperCase();
+
+          // 1) If property has its own Unit, it overrides project units (spec rule)
+          const unitsCtx = getProjectUnits();
+          let unitSym = unitSymbolFromPropertyOverride(prop, measureType, unitsCtx);
+
+          // 2) If no explicit Unit, use project UnitsInContext (fallback by measure type)
+          if (!unitSym) {
+              unitSym = symbolFromProjectUnits(measureType, unitsCtx);
+          }
+
+          // Format number with one decimal, but drop trailing ".0"
+          const num = oneDecimal(raw);
+
+          // Non-numeric properties: just show raw value
+          if (num === "") {
+              const rawStr = nv ?.value ?? nv ?.Value ?? "";
+              return { name, value: String(rawStr) };
+          }
+
+
+          //Update: always convert to meters (m2, m3)
+
+          //// Present as "32.5 [m]" or "342 [m²]"
+          //const value = unitSym ? `${num} [${unitSym}]` : `${num}`;
+          //if (logUnitSym) {
+          //    console.log(value); //DALMAN
+          //}
+          //return { name, value };
+
+          let rawNum = typeof raw === "number" ? raw : parseFloat(raw);
+          if (!Number.isFinite(rawNum)) {
+              // Non-numeric property: show as-is
+              const rawStr = (prop ?.NominalValue ?.value ?? prop ?.NominalValue ?.Value ?? "").toString();
+              return { name, value: rawStr };
+          }
+
+          // Normalize unit symbol for matching
+          const u = String(unitSym || "").toLowerCase();
+
+          // mm² -> m²
+          if (/^mm(?:²|2)$/.test(u)) {
+              const numM = oneDecimal(rawNum / 1e6);        // 1 mm² = 1e-6 m²
+              return { name, value: `${numM} [m²]` };
+          }
+
+          // mm³ -> m³
+          if (/^mm(?:³|3)$/.test(u)) {
+              const numM = oneDecimal(rawNum / 1e9);        // 1 mm³ = 1e-9 m³
+              return { name, value: `${numM} [m³]` };
+          }
+
+          // cm² -> m²
+          if (/^cm(?:²|2)$/.test(u)) {
+              const numM = oneDecimal(rawNum / 1e4);        // 1 cm² = 1e-4 m²
+              return { name, value: `${numM} [m²]` };
+          }
+          // cm³ -> m³
+          if (/^cm(?:³|3)$/.test(u)) {
+              const numM = oneDecimal(rawNum / 1e6);        // 1 cm³ = 1e-6 m³
+              return { name, value: `${numM} [m³]` };
+          }
+
+          // default presentation (already rounded to one decimal elsewhere)
+          const value = unitSym ? `${num} [${unitSym}]` : `${num}`;
+          return { name, value };
       }
+
+
+      
+
+      // --- number formatting (max one decimal) -------------------------------      
+      function oneDecimal(n) {
+          const x = typeof n === "number" ? n : parseFloat(n);
+          if (!Number.isFinite(x)) return "";
+          const rounded = x.toFixed(1);      // string like "32.0" or "32.5"
+          return rounded.endsWith(".0")
+              ? rounded.slice(0, -2)           // strip the ".0"
+              : rounded;
+      }
+
+
+      // --- unit helpers ----------------------------------------------------------
+      function siPrefixSymbol(prefix) {
+          // Common IFC SI prefixes
+          const map = { KILO: "k", HECTO: "h", DECA: "da", DECI: "d", CENTI: "c", MILLI: "m", MICRO: "μ", NANO: "n" };
+          return map[String(prefix || "").toUpperCase()] || "";
+      }
+      function siNameToBaseSymbol(name) {
+          // IFC SI names -> base symbol (no exponent)
+          const map = {
+              METRE: "m", GRAM: "g", SECOND: "s", AMPERE: "A", KELVIN: "K", MOLE: "mol",
+              CANDELA: "cd", SQUARE_METRE: "m²", CUBIC_METRE: "m³"
+          };
+          return map[String(name || "").toUpperCase()] || "";
+      }
+      //function siNameToBaseSymbol(name) {
+      //    const map = {
+      //        METRE: "m", GRAM: "g", SECOND: "s", AMPERE: "A", KELVIN: "K", MOLE: "mol", CANDELA: "cd"
+      //    };
+      //    return map[String(name || "").toUpperCase()] || "";
+      //}
+      //function withExponent(sym, qtyTypeName) {
+      //    // If the SI unit doesn't already encode area/volume, add exponent by quantity kind
+      //    if (!sym) return sym;
+      //    const t = String(qtyTypeName || "");
+      //    if (/IfcQuantityArea$/i.test(t) && !/[²]/.test(sym)) return sym + "²";
+      //    if (/IfcQuantityVolume$/i.test(t) && !/[³]/.test(sym)) return sym + "³";
+      //    return sym;
+      //}
+      function withExponent(sym, exp) {
+          if (!sym) return sym;
+          if (exp === 2 && !/[²]/.test(sym)) return sym + "²";
+          if (exp === 3 && !/[³]/.test(sym)) return sym + "³";
+          return sym;
+      }
+
+      // Try to resolve a readable unit label from an IfcNamedUnit / IfcSIUnit / IfcConversionBasedUnit
+      function resolveUnitSymbol(unitObj, qtyTypeName) {
+          if (!unitObj) return "";
+          // IfcSIUnit shape often has { UnitType, Name, Prefix }
+          if (unitObj.Name || unitObj.Prefix) {
+              const base = siNameToBaseSymbol(unitObj.Name ?.value || unitObj.Name);
+              const prefix = siPrefixSymbol(unitObj.Prefix ?.value || unitObj.Prefix);
+              const sym = prefix + base;
+              return withExponent(sym, qtyTypeName);
+          }
+          // IfcConversionBasedUnit can expose a human name (e.g., "inch", "foot")
+          if (unitObj.Name) {
+              const human = unitObj.Name ?.value || unitObj.Name;
+              return String(human);
+          }
+          return "";
+      }
+
+      // Fallback defaults when IFC omits explicit units
+      function defaultUnitForQuantityType(qtyTypeName) {
+          if (/IfcQuantityLength$/i.test(qtyTypeName)) return "m";
+          if (/IfcQuantityArea$/i.test(qtyTypeName)) return "m²";
+          if (/IfcQuantityVolume$/i.test(qtyTypeName)) return "m³";
+          if (/IfcQuantityWeight$/i.test(qtyTypeName)) return "kg";
+          if (/IfcQuantityTime$/i.test(qtyTypeName)) return "s";
+          return "";
+      }
+
+      // --- parse a single Ifc*Quantity into {name, value} with unit ---------------
+      //function parseIfcQuantity(q) {
+      //    const name = getIfcName(q);
+
+      //    // numeric value (handle all common quantity fields)
+      //    const raw =
+      //        q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value ??
+      //            q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value ??
+      //                q ?.NominalValue ?.value ?? q ?.NominalValue ?.Value ?? null;
+
+      //    const qtyTypeName = q ?.name || q ?.constructor ?.name || ""; // e.g., "IfcQuantityArea"
+      //    // Prefer explicit unit on the quantity; otherwise fall back
+      //    const unitExplicit = q ?.Unit;
+      //    const unitLabel =
+      //        resolveUnitSymbol(unitExplicit, qtyTypeName) ||
+      //        defaultUnitForQuantityType(qtyTypeName);
+
+      //    const num = oneDecimal(raw);
+          
+      //    // present as "342.0 [m²]" (unit only if we have one)
+      //    const value = unitLabel ? `${num} [${unitLabel}]` : `${num}`;
+      //    return { name, value };
+      //}
+
+      //If you aren’t already, ensure parseIfcQuantity uses the same unit logic:
+      //function parseIfcQuantity(q) {
+      //    const name = getIfcName(q);
+
+      //    const raw =
+      //        q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value ??
+      //            q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value ??
+      //                q ?.NominalValue ?.value ?? q ?.NominalValue ?.Value ?? null;
+
+      //    const typeName = String(q ?.name || q ?.constructor ?.name || "").toUpperCase();
+
+      //    let unitSym = "";
+      //    if (typeName.includes("IFCQUANTITYLENGTH")) unitSym = lengthSymbolFromUnits(getProjectUnits());
+      //    else if (typeName.includes("IFCQUANTITYAREA")) unitSym = areaSymbolFromUnits(getProjectUnits());
+      //    else if (typeName.includes("IFCQUANTITYVOLUME")) unitSym = volumeSymbolFromUnits(getProjectUnits());
+
+      //    const num = oneDecimal(raw);
+      //    const value = unitSym ? `${num} [${unitSym}]` : `${num}`;
+      //    return { name, value };
+      //}
 
       function parseIfcQuantity(q) {
           const name = getIfcName(q);
-          const val = q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value
-              ?? q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value
-                  ?? q ?.NominalValue ?.value ?? "";
-          const unit = q ?.Unit ?.value ?? q ?.Unit ?? "";
-          return { name, value: unit ? `${val} ${unit}` : val };
+          const raw =
+              q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value ??
+                  q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value ??
+                      q ?.NominalValue ?.value ?? q ?.NominalValue ?.Value ?? null;
+
+          const typeName = String(q ?.name || q ?.constructor ?.name || "").toUpperCase();
+          const unitsCtx = getProjectUnits();
+
+          // prefer explicit Unit on the quantity itself, else fallback to project units by type
+          let unitSym = "";
+          if (q ?.Unit) {
+              unitSym = symbolFromIfcUnit(q.Unit, typeName);
+          }
+          if (!unitSym) {
+              if (typeName.includes("IFCQUANTITYLENGTH")) unitSym = lengthSymbolFromUnits(unitsCtx);
+              else if (typeName.includes("IFCQUANTITYAREA")) unitSym = areaSymbolFromUnits(unitsCtx);
+              else if (typeName.includes("IFCQUANTITYVOLUME")) unitSym = volumeSymbolFromUnits(unitsCtx);
+              else unitSym = defaultUnitForQuantityType(typeName);
+          }
+
+          const num = oneDecimal(raw);
+          const value = unitSym ? `${num} [${unitSym}]` : `${num}`;
+          return { name, value };
       }
+
+
+
 
 
 
