@@ -378,7 +378,94 @@
       });
 
 
-      //FORTSÄTTER MED RAGGAR-IFC-PROPS    
+      //FORTSÄTTER MED RAGGAR-IFC-PROPS  
+      // Find the element's type (IfcRelDefinesByType → RelatingType)
+      function getTypeIdForElement(expressID) {
+          const targetId = asId(expressID);
+          const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, WebIFC.IFCRELDEFINESBYTYPE);
+          const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
+
+          for (let i = 0; i < n; i++) {
+              const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
+              if (!relID) continue;
+              const rel = ifcApi.GetLine(webIfcModelID, relID);
+              if (!rel ?.RelatedObjects || !rel.RelatingType) continue;
+              const related = rel.RelatedObjects || [];
+              const isOurs = related.some(o => asId(o) === targetId);
+              if (!isOurs) continue;
+              return asId(rel.RelatingType);
+          }
+          return null;
+      }
+
+      // Read Psets directly listed on an IfcTypeObject via HasPropertySets
+      function getPsetsFromTypeHasPropertySets(typeObj) {
+          const out = [];
+          const hps = typeObj ?.HasPropertySets || [];
+          for (const h of hps) {
+              const def = ifcApi.GetLine(webIfcModelID, asId(h));
+              if (!def) continue;
+              const kind = getIfcKind(def); // uses your robust detector
+              if (kind === "IFCPROPERTYSET") {
+                  const name = getIfcName(def);
+                  const props = (def.HasProperties || [])
+                      .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
+                      .filter(Boolean)
+                      .map(parseIfcProperty);
+                  out.push({ kind: "Pset", name, props, _origin: "Type" });
+              } else if (kind === "IFCELEMENTQUANTITY") {
+                  const name = getIfcName(def);
+                  const props = (def.Quantities || [])
+                      .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
+                      .filter(Boolean)
+                      .map(parseIfcQuantity);
+                  out.push({ kind: "Quantities", name, props, _origin: "Type" });
+              }
+          }
+          return out;
+      }
+
+      // Also check if the type itself has RelDefinesByProperties (less common but possible)
+      function getPsetsFromTypeRDP(typeId) {
+          const out = [];
+          const relType = WebIFC.IFCRELDEFINESBYPROPERTIES;
+          const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, relType);
+          const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
+
+          for (let i = 0; i < n; i++) {
+              const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
+              if (!relID) continue;
+              const rel = ifcApi.GetLine(webIfcModelID, relID);
+              if (!rel ?.RelatedObjects || !rel.RelatingPropertyDefinition) continue;
+
+              const related = rel.RelatedObjects || [];
+              const hitsType = related.some(o => asId(o) === typeId);
+              if (!hitsType) continue;
+
+              const pd = rel.RelatingPropertyDefinition;
+              const def = pd ? ifcApi.GetLine(webIfcModelID, asId(pd)) : null;
+              if (!def) continue;
+
+              const kind = getIfcKind(def);
+              if (kind === "IFCPROPERTYSET") {
+                  const name = getIfcName(def);
+                  const props = (def.HasProperties || [])
+                      .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
+                      .filter(Boolean)
+                      .map(parseIfcProperty);
+                  out.push({ kind: "Pset", name, props, _origin: "Type" });
+              } else if (kind === "IFCELEMENTQUANTITY") {
+                  const name = getIfcName(def);
+                  const props = (def.Quantities || [])
+                      .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
+                      .filter(Boolean)
+                      .map(parseIfcQuantity);
+                  out.push({ kind: "Quantities", name, props, _origin: "Type" });
+              }
+          }
+          return out;
+      }
+
 
       // More resilient kind detection for web-ifc objects
       function getIfcKind(def) {
@@ -397,16 +484,69 @@
 
       //FORTSÄTTER MED RAGGAR-IFC-PROPS v2      
 
+      //async function getPsetsForElement(expressID) {
+      //    if (webIfcModelID == null) return [];
+
+      //    const targetId = asId(expressID);
+      //    const relType = WebIFC.IFCRELDEFINESBYPROPERTIES;
+      //    const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, relType);
+
+      //    const psets = [];
+      //    const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
+
+      //    for (let i = 0; i < n; i++) {
+      //        const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
+      //        if (!relID) continue;
+
+      //        const rel = ifcApi.GetLine(webIfcModelID, relID);
+      //        if (!rel || !rel.RelatedObjects || !rel.RelatingPropertyDefinition) continue;
+
+      //        // normalize both sides
+      //        const related = rel.RelatedObjects || [];
+      //        const isOurs = related.some(o => asId(o) === targetId);
+      //        if (!isOurs) continue;
+
+      //        const pd = rel.RelatingPropertyDefinition;
+      //        const def = pd ? ifcApi.GetLine(webIfcModelID, pd.value ?? pd) : null;
+      //        if (!def) continue;
+
+      //        const kind = getIfcKind(def);
+
+      //        if (kind === "IFCPROPERTYSET") {
+      //            const name = getIfcName(def);
+      //            const props = (def.HasProperties || [])
+      //                .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
+      //                .filter(Boolean)
+      //                .map(parseIfcProperty);
+      //            psets.push({ kind: "Pset", name, props });
+
+      //        } else if (kind === "IFCELEMENTQUANTITY") {
+      //            const name = getIfcName(def);
+      //            const props = (def.Quantities || [])
+      //                .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
+      //                .filter(Boolean)
+      //                .map(parseIfcQuantity);
+      //            psets.push({ kind: "Quantities", name, props });
+      //        } else {
+      //            // Not a Pset or ElementQuantity – skip
+      //            continue;
+      //        }
+      //    }
+
+      //    return psets;
+      //}
+
       async function getPsetsForElement(expressID) {
           if (webIfcModelID == null) return [];
 
           const targetId = asId(expressID);
+
+          // A) Instance-level Psets via IfcRelDefinesByProperties (your existing logic)
           const relType = WebIFC.IFCRELDEFINESBYPROPERTIES;
           const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, relType);
-
-          const psets = [];
           const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
 
+          const instancePsets = [];
           for (let i = 0; i < n; i++) {
               const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
               if (!relID) continue;
@@ -414,41 +554,58 @@
               const rel = ifcApi.GetLine(webIfcModelID, relID);
               if (!rel || !rel.RelatedObjects || !rel.RelatingPropertyDefinition) continue;
 
-              // normalize both sides
               const related = rel.RelatedObjects || [];
               const isOurs = related.some(o => asId(o) === targetId);
               if (!isOurs) continue;
 
               const pd = rel.RelatingPropertyDefinition;
-              const def = pd ? ifcApi.GetLine(webIfcModelID, pd.value ?? pd) : null;
+              const def = pd ? ifcApi.GetLine(webIfcModelID, asId(pd)) : null;
               if (!def) continue;
 
               const kind = getIfcKind(def);
-
               if (kind === "IFCPROPERTYSET") {
                   const name = getIfcName(def);
                   const props = (def.HasProperties || [])
                       .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
                       .filter(Boolean)
                       .map(parseIfcProperty);
-                  psets.push({ kind: "Pset", name, props });
-
+                  instancePsets.push({ kind: "Pset", name, props, _origin: "Instance" });
               } else if (kind === "IFCELEMENTQUANTITY") {
                   const name = getIfcName(def);
                   const props = (def.Quantities || [])
                       .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
                       .filter(Boolean)
                       .map(parseIfcQuantity);
-                  psets.push({ kind: "Quantities", name, props });
-              } else {
-                  // Not a Pset or ElementQuantity – skip
-                  continue;
+                  instancePsets.push({ kind: "Quantities", name, props, _origin: "Instance" });
               }
           }
 
-          return psets;
-      }
+          // B) Type-level Psets
+          const typeId = getTypeIdForElement(targetId);
+          let typePsets = [];
+          if (typeId != null) {
+              const typeObj = ifcApi.GetLine(webIfcModelID, typeId);
+              if (typeObj) {
+                  typePsets = [
+                      ...getPsetsFromTypeHasPropertySets(typeObj),
+                      ...getPsetsFromTypeRDP(typeId),
+                  ];
+              }
+          }
 
+          // C) Merge (instance has priority over type when names collide)
+          //    You can change the dedupe key as needed; using set name + kind here.
+          const seen = new Set();
+          const merged = [];
+          for (const s of [...instancePsets, ...typePsets]) {
+              const key = `${s.kind}|${s.name}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              merged.push(s);
+          }
+
+          return merged;
+      }
 
 
       function getIfcName(obj) {
@@ -805,7 +962,7 @@
 
       
       function renderFilteredPsetsFromWebIFC(psets) {
-          const wanted = new Set(["Quantities", "Information"]);
+          const wanted = new Set(["Quantities", "Information", "BaseQuantities", "Identity Data"]);
           const root = document.getElementById("psets");
           root.innerHTML = "";
 
