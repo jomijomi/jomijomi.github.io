@@ -379,6 +379,27 @@
 
 
       //FORTSÄTTER MED RAGGAR-IFC-PROPS  
+
+      function isBsabCodeString(s) {
+          // 27 | 27.C | 43.CB | 27.D/11
+          return /^[0-9]+(?:\.[A-Za-z]{1,2})?(?:\/[0-9]+)?$/.test(s.trim());
+      }
+
+      function normalizeBsab(s) {
+          // Uppercase the letter chunk after the dot, keep numbers as-is
+          // 27.c  -> 27.C
+          // 43.cb -> 43.CB
+          // 27.d/11 -> 27.D/11
+          return s.replace(
+              /^([0-9]+)(?:\.([A-Za-z]{1,2}))?(?:\/([0-9]+))?$/,
+              (_, n, letters = "", tail = "") =>
+                  letters
+                      ? `${n}.${letters.toUpperCase()}${tail ? `/${tail}` : ""}`
+                      : `${n}${tail ? `/${tail}` : ""}`
+          );
+      }
+
+
       // Find the element's type (IfcRelDefinesByType → RelatingType)
       function getTypeIdForElement(expressID) {
           const targetId = asId(expressID);
@@ -484,57 +505,7 @@
 
       //FORTSÄTTER MED RAGGAR-IFC-PROPS v2      
 
-      //async function getPsetsForElement(expressID) {
-      //    if (webIfcModelID == null) return [];
-
-      //    const targetId = asId(expressID);
-      //    const relType = WebIFC.IFCRELDEFINESBYPROPERTIES;
-      //    const relIDs = ifcApi.GetLineIDsWithType(webIfcModelID, relType);
-
-      //    const psets = [];
-      //    const n = typeof relIDs.size === "function" ? relIDs.size() : relIDs.length;
-
-      //    for (let i = 0; i < n; i++) {
-      //        const relID = typeof relIDs.get === "function" ? relIDs.get(i) : relIDs[i];
-      //        if (!relID) continue;
-
-      //        const rel = ifcApi.GetLine(webIfcModelID, relID);
-      //        if (!rel || !rel.RelatedObjects || !rel.RelatingPropertyDefinition) continue;
-
-      //        // normalize both sides
-      //        const related = rel.RelatedObjects || [];
-      //        const isOurs = related.some(o => asId(o) === targetId);
-      //        if (!isOurs) continue;
-
-      //        const pd = rel.RelatingPropertyDefinition;
-      //        const def = pd ? ifcApi.GetLine(webIfcModelID, pd.value ?? pd) : null;
-      //        if (!def) continue;
-
-      //        const kind = getIfcKind(def);
-
-      //        if (kind === "IFCPROPERTYSET") {
-      //            const name = getIfcName(def);
-      //            const props = (def.HasProperties || [])
-      //                .map(p => ifcApi.GetLine(webIfcModelID, asId(p)))
-      //                .filter(Boolean)
-      //                .map(parseIfcProperty);
-      //            psets.push({ kind: "Pset", name, props });
-
-      //        } else if (kind === "IFCELEMENTQUANTITY") {
-      //            const name = getIfcName(def);
-      //            const props = (def.Quantities || [])
-      //                .map(q => ifcApi.GetLine(webIfcModelID, asId(q)))
-      //                .filter(Boolean)
-      //                .map(parseIfcQuantity);
-      //            psets.push({ kind: "Quantities", name, props });
-      //        } else {
-      //            // Not a Pset or ElementQuantity – skip
-      //            continue;
-      //        }
-      //    }
-
-      //    return psets;
-      //}
+      
 
       async function getPsetsForElement(expressID) {
           if (webIfcModelID == null) return [];
@@ -677,49 +648,20 @@
           return 1;
       }
 
-
-      //function parseIfcProperty(prop) {
-      //    const name = getIfcName(prop);
-      //    const val = prop ?.NominalValue ?.value ?? prop ?.NominalValue ?.Value ?? "";
-      //    return { name, value: val };
-      //}
-
-      //function parseIfcProperty(prop) {
-      //    const name = getIfcName(prop);
-
-      //    const nv = prop ?.NominalValue;
-      //    const raw =
-      //        nv ?.value ?? nv ?.Value ?? // some builds
-      //            null;
-
-      //    // measure type, e.g. "IFCLENGTHMEASURE" / "IFCAREAMEASURE" / "IFCVOLUMEMEASURE"
-      //    const measureType = String(nv ?.name || nv ?.constructor ?.name || nv ?.typeName || "").toUpperCase();
-
-      //    let unitSym = "";
-      //    if (measureType.includes("IFCLENGTHMEASURE")) {
-      //        unitSym = lengthSymbolFromUnits(getProjectUnits());
-      //    } else if (measureType.includes("IFCAREAMEASURE")) {
-      //        unitSym = areaSymbolFromUnits(getProjectUnits());
-      //    } else if (measureType.includes("IFCVOLUMEMEASURE")) {
-      //        unitSym = volumeSymbolFromUnits(getProjectUnits());
-      //    }
-
-      //    // Format number
-      //    const num = oneDecimal(raw);
-
-      //    // If it isn’t a number (texts, booleans, etc.), just show as-is
-      //    const isNumeric = num !== "";
-      //    const value = isNumeric
-      //        ? (unitSym ? `${num} [${unitSym}]` : `${num}`)
-      //        : (raw ?? "");
-
-      //    return { name, value };
-      //}
+      
 
       function parseIfcProperty(prop) {
           const name = getIfcName(prop);
-
           const nv = prop ?.NominalValue;
+
+          // Get a string view of the value (covers IfcIdentifier, IfcLabel, etc.)
+          const rawStr = (nv ?.value ?? nv ?.Value ?? "").toString().trim();
+
+          //If it looks like a BSAB96 code, show it verbatim (formatted), no units/rounding
+          if (rawStr && isBsabCodeString(rawStr)) {
+              return { name, value: normalizeBsab(rawStr) };
+          }
+
           // numeric-like value (covers common cases)
           const raw =
               nv ?.value ?? nv ?.Value ?? null;
@@ -871,49 +813,8 @@
       }
 
       // --- parse a single Ifc*Quantity into {name, value} with unit ---------------
-      //function parseIfcQuantity(q) {
-      //    const name = getIfcName(q);
-
-      //    // numeric value (handle all common quantity fields)
-      //    const raw =
-      //        q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value ??
-      //            q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value ??
-      //                q ?.NominalValue ?.value ?? q ?.NominalValue ?.Value ?? null;
-
-      //    const qtyTypeName = q ?.name || q ?.constructor ?.name || ""; // e.g., "IfcQuantityArea"
-      //    // Prefer explicit unit on the quantity; otherwise fall back
-      //    const unitExplicit = q ?.Unit;
-      //    const unitLabel =
-      //        resolveUnitSymbol(unitExplicit, qtyTypeName) ||
-      //        defaultUnitForQuantityType(qtyTypeName);
-
-      //    const num = oneDecimal(raw);
-          
-      //    // present as "342.0 [m²]" (unit only if we have one)
-      //    const value = unitLabel ? `${num} [${unitLabel}]` : `${num}`;
-      //    return { name, value };
-      //}
-
-      //If you aren’t already, ensure parseIfcQuantity uses the same unit logic:
-      //function parseIfcQuantity(q) {
-      //    const name = getIfcName(q);
-
-      //    const raw =
-      //        q ?.LengthValue ?.value ?? q ?.AreaValue ?.value ?? q ?.VolumeValue ?.value ??
-      //            q ?.CountValue ?.value ?? q ?.WeightValue ?.value ?? q ?.TimeValue ?.value ??
-      //                q ?.NominalValue ?.value ?? q ?.NominalValue ?.Value ?? null;
-
-      //    const typeName = String(q ?.name || q ?.constructor ?.name || "").toUpperCase();
-
-      //    let unitSym = "";
-      //    if (typeName.includes("IFCQUANTITYLENGTH")) unitSym = lengthSymbolFromUnits(getProjectUnits());
-      //    else if (typeName.includes("IFCQUANTITYAREA")) unitSym = areaSymbolFromUnits(getProjectUnits());
-      //    else if (typeName.includes("IFCQUANTITYVOLUME")) unitSym = volumeSymbolFromUnits(getProjectUnits());
-
-      //    const num = oneDecimal(raw);
-      //    const value = unitSym ? `${num} [${unitSym}]` : `${num}`;
-      //    return { name, value };
-      //}
+      
+      
 
       function parseIfcQuantity(q) {
           const name = getIfcName(q);
